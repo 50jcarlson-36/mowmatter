@@ -22,6 +22,7 @@ alter table public.mow_crew_jobs add column if not exists recurrence_date date;
 alter table public.mow_crew_jobs add column if not exists price_cents integer not null default 0;
 alter table public.mow_crew_jobs add column if not exists cancelled_at timestamptz;
 alter table public.mow_crew_jobs add column if not exists cancellation_reason text;
+alter table public.mow_crew_jobs add column if not exists cancellation_source text;
 do $$ begin
  if not exists(select 1 from pg_constraint where conname='mow_job_customer_scope') then
   alter table public.mow_crew_jobs add constraint mow_job_customer_scope foreign key(company_id,customer_id) references public.mow_customers(company_id,id);
@@ -69,7 +70,8 @@ begin
   if abs(nullif(payload->>'latitude','')::double precision)>90 or abs(nullif(payload->>'longitude','')::double precision)>180 then raise exception 'Invalid coordinates';end if;
   insert into mow_customers(id,company_id,name,address,city,email,phone,notes,latitude,longitude,notification_consent)
   values(rid,cid,trim(payload->>'name'),trim(payload->>'address'),left(coalesce(payload->>'city','Palm Coast, FL'),100),coalesce(payload->>'email',''),coalesce(payload->>'phone',''),coalesce(payload->>'notes',''),nullif(payload->>'latitude','')::double precision,nullif(payload->>'longitude','')::double precision,coalesce((payload->>'notification_consent')::boolean,false))
-  on conflict(id) do update set name=excluded.name,address=excluded.address,city=excluded.city,email=excluded.email,phone=excluded.phone,notes=excluded.notes,latitude=excluded.latitude,longitude=excluded.longitude,notification_consent=excluded.notification_consent,updated_at=now();
+  on conflict(id) do update set name=excluded.name,address=excluded.address,city=excluded.city,email=excluded.email,phone=excluded.phone,notes=excluded.notes,latitude=excluded.latitude,longitude=excluded.longitude,notification_consent=excluded.notification_consent,updated_at=now() where mow_customers.company_id=cid;
+  if not found then raise exception 'Customer access denied';end if;
   return jsonb_build_object('ok',true,'customer_id',rid);
  elsif command='create_plan' then
   rid:=(payload->>'id')::uuid;
@@ -86,12 +88,12 @@ begin
   if not found then raise exception 'Plan unavailable';end if;
   if command='pause_plan' then
    update mow_service_plans set active=false where id=rid;
-   update mow_crew_jobs set cancelled_at=now(),cancellation_reason='plan_paused',updated_at=now() where plan_id=rid and service_date>=(now() at time zone 'America/New_York')::date and status='scheduled' and cancelled_at is null;
+   update mow_crew_jobs set cancelled_at=now(),cancellation_reason='Plan paused',cancellation_source='plan_pause',updated_at=now() where plan_id=rid and service_date>=(now() at time zone 'America/New_York')::date and status='scheduled' and cancelled_at is null;
    return jsonb_build_object('ok',true);
   end if;
   if command='resume_plan' then
    update mow_service_plans set active=true where id=rid;p.active:=true;
-   update mow_crew_jobs set cancelled_at=null,cancellation_reason=null,updated_at=now() where plan_id=rid and service_date>=(now() at time zone 'America/New_York')::date and status='scheduled' and cancellation_reason='plan_paused';
+   update mow_crew_jobs set cancelled_at=null,cancellation_reason=null,cancellation_source=null,updated_at=now() where plan_id=rid and service_date>=(now() at time zone 'America/New_York')::date and status='scheduled' and cancellation_source='plan_pause';
   end if;
   if not p.active then raise exception 'Resume the plan before generating visits';end if;
   stop_date:=coalesce((payload->>'through')::date,(now() at time zone 'America/New_York')::date+60);
@@ -116,7 +118,7 @@ begin
   rid:=(payload->>'id')::uuid;select * into j from mow_crew_jobs where id=rid and company_id=cid for update;
   if not found or j.status not in ('scheduled','blocked') then raise exception 'Only scheduled or blocked jobs can be cancelled';end if;
   if length(trim(coalesce(payload->>'reason','')))<3 then raise exception 'Add a cancellation reason';end if;
-  update mow_crew_jobs set cancelled_at=coalesce(cancelled_at,now()),cancellation_reason=left(payload->>'reason',300),updated_at=now() where id=rid;
+  update mow_crew_jobs set cancelled_at=coalesce(cancelled_at,now()),cancellation_reason=left(payload->>'reason',300),cancellation_source='owner',updated_at=now() where id=rid;
   return jsonb_build_object('ok',true);
  elsif command='cash_entry' then
   rid:=(payload->>'id')::uuid;
