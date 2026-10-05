@@ -1,0 +1,10 @@
+; Render Office and Crew records: domains registered, DNS verification pending.
+; Apply only after reviewing existing records with these names.
+; Use DNS only while verifying in Render.
+$ORIGIN mowmatter.com.
+$TTL 300
+office IN CNAME mowmatter-office.onrender.com.
+crew IN CNAME mowmatter-crew.onrender.com.
+; Main domain requires additional Render domain slots before changing its DNS.
+; Proposed later: @ CNAME mowmatter.onrender.com. (Cloudflare apex flattening)
+; Proposed later: www CNAME mowmatter.onrender.com.
