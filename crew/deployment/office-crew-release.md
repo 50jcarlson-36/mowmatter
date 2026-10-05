@@ -19,3 +19,9 @@ Office build: node build.mjs. It generates live HTML from shell.html and leaves 
 ### Authenticated handoff verification
 
 Apply `supabase/assignment-auth-fix.sql` after existing schemas. Crew assignment uses a service-only, owner-checked RPC with an empty search path to look up confirmed Auth emails. Browser roles cannot call it; Auth table grants remain unchanged.
+
+### Offline recovery follow-up
+
+Crew shell v5 isolates photo and transition failures by job while preserving each job’s event order. Other assigned jobs continue syncing. The sync-status dialog lets a crew member review failed local updates and explicitly discard that job’s remaining unsynced events and unuploaded photos; it never reverses Office records. GPS permission errors stop the old watcher before manual check-in.
+
+Run `npm ci && npm test` in `crew` for UI queue/GPS regression coverage and property server tests. Physical-device GPS accuracy, offline camera/storage limits and authentication-email delivery remain field checks.

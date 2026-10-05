@@ -1,0 +1,1 @@
+{"private":true,"name":"mowmatter-crew","scripts":{"build":"python3 build.py","test":"node crew.test.cjs && node --test server/server.test.mjs"},"devDependencies":{"jsdom":"30.1.2"}}
