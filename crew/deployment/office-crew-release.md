@@ -15,3 +15,7 @@ Validation: transactional rollback checks cover generation counts, duplicate pro
 Outstanding field acceptance: real owner/crew onboarding, auth-email delivery and redirects, physical-phone GPS and offline photo replay. Configure branded Office/Crew callback URLs in Supabase Auth and production SMTP before inviting external users if default email delivery is restricted.
 
 Office build: node build.mjs. It generates live HTML from shell.html and leaves the demo independent. API changes live in crew/supabase/office-schema.sql and crew/supabase/functions/mowmatter-crew/index.ts.
+
+### Authenticated handoff verification
+
+Apply `supabase/assignment-auth-fix.sql` after existing schemas. Crew assignment uses a service-only, owner-checked RPC with an empty search path to look up confirmed Auth emails. Browser roles cannot call it; Auth table grants remain unchanged.
