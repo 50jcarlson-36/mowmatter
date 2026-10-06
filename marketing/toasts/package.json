@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "cd ../.. && tailwindcss -c marketing/toasts/tailwind.config.cjs -i marketing/toasts/input.css -o activity-toast.css --minify",
+    "test": "cd ../.. && node marketing/toasts/test.cjs"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.17",
+    "jsdom": "26.1.0"
+  }
+}
