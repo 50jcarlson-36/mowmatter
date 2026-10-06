@@ -1,1 +1,11 @@
-{"private":true,"name":"mowmatter-office","scripts":{"build":"node build.mjs","test":"node office.test.cjs"},"devDependencies":{"jsdom":"30.1.2"}}
+{
+  "private": true,
+  "name": "mowmatter-office",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node office.test.cjs && node billing.test.cjs"
+  },
+  "devDependencies": {
+    "jsdom": "30.1.2"
+  }
+}
