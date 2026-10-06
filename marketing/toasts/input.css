@@ -1,9 +1,9 @@
 @tailwind utilities;
-#mm-activity-toast { box-sizing: border-box; left: 24px; bottom: 24px; width: min(390px, calc(100vw - 32px)); font-family: Arial, sans-serif; opacity: 0; transform: translateY(18px); transition: opacity .25s ease, transform .25s ease; }
+#mm-activity-toast { box-sizing: border-box; right: 24px; bottom: 24px; width: min(390px, calc(100vw - 32px)); font-family: Arial, sans-serif; opacity: 0; transform: translateY(18px); transition: opacity .25s ease, transform .25s ease; }
 #mm-activity-toast[hidden] { display: none; }
 #mm-activity-toast.mm-toast-visible { opacity: 1; transform: translateY(0); }
-#mm-activity-toast .mm-toast-close { flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: #334155; cursor: pointer; }
-#mm-activity-toast .mm-toast-close:hover { background: #f1f5f9; }
-#mm-activity-toast .mm-toast-close:focus-visible { outline: 3px solid #047857; outline-offset: 2px; }
+#mm-activity-toast .mm-toast-close { flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: #ffffff; cursor: pointer; }
+#mm-activity-toast .mm-toast-close:hover { background: #1e293b; }
+#mm-activity-toast .mm-toast-close:focus-visible { outline: 3px solid #22c55e; outline-offset: 2px; }
 @media(max-width: 640px) { #mm-activity-toast { left: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); } }
 @media(prefers-reduced-motion: reduce) { #mm-activity-toast { transition: none; transform: none; } }
