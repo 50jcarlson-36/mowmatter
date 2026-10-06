@@ -3,7 +3,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),path=require('n
 const root=path.join(__dirname,'dist'),wait=()=>new Promise(r=>setTimeout(r,15));
 const owner='11111111-1111-4111-8111-111111111111',customer='22222222-2222-4222-8222-222222222222',plan='33333333-3333-4333-8333-333333333333';
 async function page(file,data,signedIn=true){const d=new JSDOM(fs.readFileSync(path.join(root,file),'utf8'),{url:'https://office.mowmatter.com/'+file,runScripts:'outside-only'}),w=d.window,calls=[];
-w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false};
+w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'))};
 w.MM={ready:Promise.resolve(),session:signedIn?{access_token:'test'}:null,recovery:false,api:async body=>{calls.push(body);return body.action==='list'?data:{ok:true}},signUp:async()=>calls.push('signup'),signIn:async()=>calls.push('login'),signOut:async()=>{},resetPassword:async()=>{},resend:async()=>{}};
 w.eval(fs.readFileSync(path.join(root,'office-live.js'),'utf8'));await wait();return {d,w,calls};}
 function submit(w,selector,button){const f=w.document.querySelector(selector);f.dispatchEvent(new w.SubmitEvent('submit',{bubbles:true,cancelable:true,submitter:f.querySelector(button||'button')}));}
@@ -13,4 +13,9 @@ let p=await page('index.html',data,false);submit(p.w,'#auth','button[value="sign
 p=await page('customers.html',data);p.w.document.querySelector('[data-plan]').click();p.w.document.querySelector('[name="price"]').value='52.50';submit(p.w,'#plan-form');await wait();const saved=p.calls.find(c=>c.action==='create_plan');assert.equal(saved.payload.price_cents,5250);assert.equal(saved.payload.customer_id,customer);assert.equal(saved.payload.services.length,3);p.w.close();
 p=await page('routes.html',data);p.w.document.querySelector('[data-job]').click();p.w.document.querySelector('#edit-visit').click();submit(p.w,'#job-form');await wait();assert(p.calls.some(c=>c.action==='edit_job'));p.w.close();
 p=await page('index.html',{...data,profile:{role:'member'}});assert.match(p.w.document.querySelector('#main').textContent,/field workspace/);assert(!p.w.document.querySelector('#new-customer'));p.w.close();
-console.log('PASS: five live Office views, real recurring KPI, signup action, plan pricing, rescheduling, role separation');})().catch(e=>{console.error(e);process.exitCode=1});
+p=await page('index.html',data,false);let doc=p.w.document,menu=doc.querySelector('#mobile-menu'),drawer=doc.querySelector('#mobile-nav-dialog'),nav=doc.querySelector('#office-nav');
+assert.equal(menu.getAttribute('aria-label'),'Open navigation');assert(doc.querySelector('#refresh svg'));assert(doc.querySelector('#mobile-menu svg'));
+menu.click();assert(drawer.open);assert.equal(nav.parentElement,drawer);assert(doc.body.classList.contains('nav-open'));assert.equal(menu.getAttribute('aria-expanded'),'true');
+doc.querySelector('#close-mobile-nav').click();assert(!drawer.open);assert.equal(nav.parentElement,doc.querySelector('.app-shell'));assert(!doc.body.classList.contains('nav-open'));assert.equal(menu.getAttribute('aria-expanded'),'false');assert.equal(doc.activeElement,menu);
+menu.click();drawer.dispatchEvent(new p.w.MouseEvent('click',{bubbles:true}));assert(!drawer.open);p.w.close();
+console.log('PASS: five live Office views, real recurring KPI, signup action, plan pricing, rescheduling, role separation, modal navigation and icon controls');})().catch(e=>{console.error(e);process.exitCode=1});
