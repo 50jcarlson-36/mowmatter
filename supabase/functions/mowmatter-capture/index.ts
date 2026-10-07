@@ -68,7 +68,20 @@ Deno.serve(async (req: Request) => {
    if(!['one_time','weekly','biweekly','monthly','unsure'].includes(b.frequency))return reply(400,{error:'Choose a service frequency.'});
    if(typeof b.submission_id!=='string'||!b.submission_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i))return reply(400,{error:'Please reload and try again.'});
    const date=clean(b.preferred_date,10);if(date&&(!/^\d{4}-\d{2}-\d{2}$/.test(date)||Number.isNaN(Date.parse(date))))return reply(400,{error:'Choose a valid date.'});
-   const r=await db('mowmatter_homeowner_requests',{email,first_name:clean(b.first_name,80),phone:clean(b.phone,32),address,city,state,zip,services,frequency:b.frequency,lawn_height:['short','overgrown','unsure'].includes(b.lawn_height)?b.lawn_height:'unsure',access_notes:clean(b.access_notes,1000),preferred_date:date||null,source,submission_id:b.submission_id,request_consent:true});
+   // Recheck availability on the server; a URL or client flag cannot create a lead.
+   const availability=await fetch(url+'/rest/v1/mowmatter_directory_listings?'+new URLSearchParams({select:'id',status:'eq.approved',service_zips:'cs.{'+zip+'}',services:'cs.{'+services.join(',')+'}',limit:'1'}),{headers:{apikey:secret},signal:AbortSignal.timeout(8000)});
+   if(!availability.ok)return reply(503,{error:'Availability could not be checked. Please try again.'});
+   const noProvider=(await availability.json()).length===0,sharing=b.lead_sharing_consent===true;
+   let leadLocation=null;
+   if(noProvider&&sharing){
+    try{
+     const cached=await fetch(url+'/rest/v1/mow_zip_centers?'+new URLSearchParams({select:'location',zip:'eq.'+zip,limit:'1'}),{headers:{apikey:secret},signal:AbortSignal.timeout(5000)});
+     const rows=cached.ok?await cached.json():[];
+     if(rows.length)leadLocation=rows[0].location;
+     else {const geo=await fetch('https://api.zippopotam.us/us/'+zip,{signal:AbortSignal.timeout(5000)});if(geo.ok){const place=(await geo.json()).places?.[0],lat=Number(place?.latitude),lng=Number(place?.longitude);if(place&&Number.isFinite(lat)&&Number.isFinite(lng)&&Math.abs(lat)<=90&&Math.abs(lng)<=180){const center=await db('rpc/mow_growth_zip',{p_zip:zip,p_lat:lat,p_lng:lng});if(center.ok)leadLocation='SRID=4326;POINT('+lng+' '+lat+')';}}}
+    }catch{/* Save the request even when geocoding is unavailable; exclude it until geocoded. */}
+   }
+   const r=await db('mowmatter_homeowner_requests',{no_provider_found:noProvider,lead_sharing_consent:sharing,lead_location:leadLocation,email,first_name:clean(b.first_name,80),phone:clean(b.phone,32),address,city,state,zip,services,frequency:b.frequency,lawn_height:['short','overgrown','unsure'].includes(b.lawn_height)?b.lawn_height:'unsure',access_notes:clean(b.access_notes,1000),preferred_date:date||null,source,submission_id:b.submission_id,request_consent:true});
    if(!r.ok){const err=await r.json();if(err.code!=='23505')return reply(503,{error:'Your request could not be saved. Please try again.'});}
    return reply(200,{ok:true});
   }

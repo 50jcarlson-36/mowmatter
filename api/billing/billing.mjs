@@ -1,4 +1,5 @@
 import Stripe from 'stripe';
+import {leadPackageCheckout,fulfillLeadPackage} from '../growth/checkout.mjs';
 import {randomUUID,randomBytes} from 'node:crypto';
 export const FEE_BPS=Object.freeze({starter:350,growth:250,scale:150});
 export function feePlan(a){return a?.paid&&a.status==='active'&&FEE_BPS[a.plan]?a.plan:'starter'}
@@ -38,13 +39,14 @@ export function createBilling({env=process.env,fetcher=fetch,stripeClient}={}){
  currency:o.currency,status:o.status||(event.type==='charge.refunded'?'refunded':'unknown'),event_created:event.created
  },'resolution=ignore-duplicates,return=minimal');}
  }send(200,{received:true});return true;}
-  if(pathname==='/api/billing/webhook'){if(req.method!=='POST'){send(405,{error:'POST required'});return true}if(!stripe||!signing||!dbkey){send(503,{error:'Webhook is not configured'});return true}let event;try{event=stripe.webhooks.constructEvent(await readRaw(req),req.headers['stripe-signature'],signing)}catch(e){send(e.status||400,{error:'Invalid webhook signature or payload'});return true}if(event.livemode!==true){send(400,{error:'Wrong Stripe environment'});return true}await sync(event);send(200,{received:true});return true;}
+  if(pathname==='/api/billing/webhook'){if(req.method!=='POST'){send(405,{error:'POST required'});return true}if(!stripe||!signing||!dbkey){send(503,{error:'Webhook is not configured'});return true}let event;try{event=stripe.webhooks.constructEvent(await readRaw(req),req.headers['stripe-signature'],signing)}catch(e){send(e.status||400,{error:'Invalid webhook signature or payload'});return true}if(event.livemode!==true){send(400,{error:'Wrong Stripe environment'});return true}if(!await fulfillLeadPackage(event,{stripe,db}))await sync(event);send(200,{received:true});return true;}
   const origin=req.headers.origin;if(!ORIGINS.has(origin)){send(403,{error:'Origin not allowed'});return true}headers['Access-Control-Allow-Origin']=origin;
   if(req.method==='OPTIONS'){headers['Access-Control-Allow-Headers']='authorization,content-type';headers['Access-Control-Allow-Methods']='GET,POST,OPTIONS';send(204,null);return true}
   if(pathname==='/api/billing/config'&&req.method==='GET'){send(200,await ready());return true}
   if(req.method!=='POST'){send(405,{error:'POST required'});return true}
   let body;try{body=JSON.parse((await readRaw(req,4096)).toString())}catch(e){throw Object.assign(Error('Invalid request'),{status:e.status||400})}
-  const {cid}=await owner(req,body.company_id);let a=await account(cid);
+  const {cid,user}=await owner(req,body.company_id);let a=await account(cid);
+  if(pathname==='/api/billing/lead-package'){if(!stripe||!signing)throw Object.assign(Error('Lead package payments are unavailable'),{status:503});send(200,await leadPackageCheckout({body,cid,actor:user.id,stripe,db,env}));return true;}
   if(pathname==='/api/billing/status'){send(200,{fee_percent:FEE_BPS[feePlan(a)]/100,...(await ready()),subscription:a?{plan:a.plan,status:a.status,paid:a.paid,period_end:a.period_end,cancel_at_period_end:a.cancel_at_period_end}:{plan:'starter',status:'free',paid:false}});return true}
   if(pathname==='/api/billing/accounting'){const r=await ready();const activity=await db('mow_payment_activity?select=event_id,event_type,object_id,amount_cents,currency,status,event_created&company_id=eq.'+encodeURIComponent(cid)+'&order=event_created.desc,event_id.desc&limit=25');send(200,{...r,fee_percent:FEE_BPS[feePlan(a)]/100,plan:feePlan(a),activity,...(stripe&&r.stripe_account_verified?await accounting(a):{connection:null,transactions:[],payouts:[],balances:null})});return true}
   if(pathname==='/api/billing/connect/onboarding'){if(!(await ready()).connect_onboarding_enabled)throw Object.assign(Error('Stripe Connect setup is awaiting activation'),{status:503});a=await ensureCustomer(cid);const link=await stripe.v2.core.accountLinks.create({account:a.customer_id,use_case:{type:'account_onboarding',account_onboarding:{configurations:['merchant','customer'],refresh_url:'https://office.mowmatter.com/billing.html?onboarding=refresh',return_url:'https://office.mowmatter.com/billing.html?onboarding=returned'}}});send(200,{url:link.url});return true}
