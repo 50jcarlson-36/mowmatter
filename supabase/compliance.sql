@@ -19,7 +19,7 @@ alter table public.mowmatter_marketing_suppressions enable row level security;
 revoke all on public.mowmatter_compliance_requests, public.mowmatter_marketing_suppressions from public,anon,authenticated;
 grant select,insert,update,delete on public.mowmatter_compliance_requests, public.mowmatter_marketing_suppressions to service_role;
 create or replace function public.mowmatter_submit_compliance(p_id uuid,p_email text,p_type text,p_message text,p_notice text)
-returns boolean language plpgsql security definer set search_path='' as $$
+returns boolean language plpgsql security invoker set search_path='' as $$
 declare existing public.mowmatter_compliance_requests%rowtype;
 begin
  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(p_id::text,0));
