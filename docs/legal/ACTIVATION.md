@@ -1,0 +1,4 @@
+# Legal and request-controls release
+Authorized for publication October 7, 2026. Business identification supplied: MowMatter, 30 N Gould St Ste R, Sheridan, WY 82801. Contact is the monitored request queue, not an invented email address. No LLC suffix has been assumed.
+Policies describe current foreground GPS and separate future background location. No campaign, payment or tracking feature is activated by publishing legal pages. Forms create durable requests; access/export/deletion need identity verification and staff follow-up. Monitor the request queue regularly. Commercial sends must check marketing suppressions and include the supplied postal address and working opt-out.
+Publication is distinct from account/checkout affirmative acceptance. Existing users are not retroactively marked as accepting terms. Future acceptance must store the applicable version.
