@@ -1,4 +1,4 @@
-(()=>{'use strict';const base='https://pzymmsfjgspvzbivzvkx.supabase.co',key='sb_publishable_KQGD-vWlAlJi_Bv7fSaEvA_YLJpIgyu';let session,recovery=false,refreshPending=null,authError='';
+(()=>{'use strict';const base='https://pzymmsfjgspvzbivzvkx.supabase.co',key='sb_publishable_KQGD-vWlAlJi_Bv7fSaEvA_YLJpIgyu';let session,recovery=false,refreshPending=null,authError='',googleRequested=false;
 try{session=JSON.parse(localStorage.getItem('mm-auth-v1'))}catch{}
 function save(s){session=s;try{if(s)localStorage.setItem('mm-auth-v1',JSON.stringify(s));else localStorage.removeItem('mm-auth-v1')}catch{throw Error('Enable browser storage to keep your account signed in')}}
 async function request(path,body,method='POST',token){const r=await fetch(base+'/auth/v1/'+path,{method,headers:{apikey:key,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(20000)});const d=await r.json();if(!r.ok)throw Error(d.msg||d.error_description||d.message||'Could not connect to your account');return d}
@@ -9,6 +9,7 @@ const oauthKey='mm-google-pkce-v1';
 const base64url=bytes=>btoa(String.fromCharCode(...bytes)).replaceAll('+','-').replaceAll('/','_').replace(/=+$/,'');
 const ready=(async()=>{
  const url=new URL(location.href),h=new URLSearchParams(url.hash.slice(1)),code=url.searchParams.get('code');
+ if(url.searchParams.get('signin')==='google'){googleRequested=true;url.searchParams.delete('signin');history.replaceState(null,'',url.pathname+url.search+url.hash);}
  if(code){
   url.searchParams.delete('code');history.replaceState(null,'',url.pathname+url.search);
   const saved=sessionStorage.getItem(oauthKey);sessionStorage.removeItem(oauthKey);
@@ -52,6 +53,7 @@ function mountGoogleLogin(form){
  form.before(button,divider);
  const status=form.querySelector('[role="status"]');if(status){status.setAttribute('aria-live','polite');status.textContent=authError;}
  button.onclick=async()=>{button.disabled=true;button.setAttribute('aria-busy','true');try{await googleSignIn()}catch(err){if(status)status.textContent=err.message;button.disabled=false;button.removeAttribute('aria-busy')}};
+ if(googleRequested){googleRequested=false;void button.onclick();}
 }
 
 window.MM={ready,googleSignIn,mountGoogleLogin,get authError(){return authError},async ensureSession(){await ready;if(!session)throw Error('Sign in to continue');if(session.expires_at<Date.now()+30000)await refresh();return session},get session(){return session},get recovery(){return recovery},
