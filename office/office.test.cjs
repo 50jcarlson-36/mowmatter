@@ -4,7 +4,7 @@ const root=path.join(__dirname,'dist'),wait=()=>new Promise(r=>setTimeout(r,15))
 const owner='11111111-1111-4111-8111-111111111111',customer='22222222-2222-4222-8222-222222222222',plan='33333333-3333-4333-8333-333333333333';
 async function page(file,data,signedIn=true){const d=new JSDOM(fs.readFileSync(path.join(root,file),'utf8'),{url:'https://office.mowmatter.com/'+file,runScripts:'outside-only'}),w=d.window,calls=[];
 w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'))};
-w.MM={ready:Promise.resolve(),session:signedIn?{access_token:'test'}:null,recovery:false,api:async body=>{calls.push(body);return body.action==='list'?data:{ok:true}},signUp:async()=>calls.push('signup'),signIn:async()=>calls.push('login'),signOut:async()=>{},resetPassword:async()=>{},resend:async()=>{}};
+w.MM={mountGoogleLogin:()=>{},ready:Promise.resolve(),session:signedIn?{access_token:'test'}:null,recovery:false,api:async body=>{calls.push(body);return body.action==='list'?data:{ok:true}},signUp:async()=>calls.push('signup'),signIn:async()=>calls.push('login'),signOut:async()=>{},resetPassword:async()=>{},resend:async()=>{}};
 w.showMowAccounting=async()=>{};
 w.eval(fs.readFileSync(path.join(root,'office-live.js'),'utf8'));await wait();return {d,w,calls};}
 function submit(w,selector,button){const f=w.document.querySelector(selector);f.dispatchEvent(new w.SubmitEvent('submit',{bubbles:true,cancelable:true,submitter:f.querySelector(button||'button')}));}
