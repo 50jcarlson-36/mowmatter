@@ -18,3 +18,9 @@ Property lookup preview: ten attempts over fourteen days, with a global daily ca
 Free Render API instances sleep; the first property lookup may take a minute to wake up. Static services created from a public Git URL use manual deployment until an authorized Git provider/Blueprint configuration is added. Do not assume a GitHub push was deployed; verify each service deployment.
 
 Custom domains require the Render-provided domain verification and Cloudflare DNS updates before launch on mowmatter.com, office.mowmatter.com and crew.mowmatter.com.
+
+## Business Login embedding and launch updates (2026-10-08)
+
+Deploy Marketing (`web/dist`) and Office (`office/dist`) after the login-preference change. In Marketing's existing Content-Security-Policy header, add `frame-src https://office.mowmatter.com;` while keeping the other directives. Without this explicit directive, `default-src 'self'` blocks the Business Login iframe. Office already allows the two marketing origins in `frame-ancestors`.
+
+The launch-updates checkbox belongs to the login form and defaults checked. Email sign-in and OAuth save both true and false through authenticated `mm_launch_updates`. It resolves the email from the confirmed account on the server. Existing unsubscribe suppressions remain authoritative. Launch-email audiences must filter `launch_updates = true` and exclude `mowmatter_marketing_suppressions`; `marketing_consent` remains a separate promotional preference. No separate lead form is required on the early-access page.
