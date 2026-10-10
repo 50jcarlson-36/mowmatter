@@ -22,6 +22,7 @@ function render(){if(!data.company){$('#main').innerHTML='<section class="card a
 $('#business-name').textContent=data.company.name;const owner=data.profile.role==='owner';if(!owner){$('#main').innerHTML='<section class="card"><h1>Your field workspace is ready.</h1><p>Your role has access to assigned field work. Owner financials and customer contacts stay private.</p><a class="button primary" href="https://crew.mowmatter.com/">Open Crew app</a></section>';return}
 const plans=data.plans||[],customers=data.customers||[],jobs=data.jobs||[],active=plans.filter(p=>p.active),recurring=active.reduce((n,p)=>n+p.price_cents*365.25/p.interval_days/12,0);
 $('#business-glance').innerHTML=`<span class="eyebrow">YOUR BUSINESS, AT A GLANCE</span><strong>${money(recurring)}</strong><small>Contracted monthly equivalent</small><div class="milestone">${customers.length} customers · ${active.length} active plans</div><a href="customers.html" class="button primary full">Grow this value ↗</a><small>Build documented earnings first. A sale valuation is not calculated yet.</small>`;
+if(page==='settings'){window.showMowBranding(data);return}
 if(page==='billing'){window.showMowBilling(data.company.id);return}
 if(page==='growth'){window.showMowGrowth(data.company.id);return}
 const titles={home:'Your business, at a glance.',customers:'Know every yard.',routes:'Keep the field moving.',financials:'Know what comes in.',team:'Office and Crew. Connected.'};
@@ -35,6 +36,7 @@ $('#new-job')?.addEventListener('click',()=>jobForm());
 $('#search')?.addEventListener('input',e=>{query=e.target.value;const q=query.toLowerCase();document.querySelectorAll('[data-search]').forEach(r=>r.hidden=!r.dataset.search.toLowerCase().includes(q))});
 $('#assign')?.addEventListener('click',assign);
 if(page==='home')void window.showMowLeadAlerts?.(data.company.id);
+if(page==='financials')void window.showMowInvoices?.(data);
 if(page==='financials')window.showMowAccounting(data.company.id,document.getElementById('stripe-accounting'),data.jobs||[]);
 $('#cash-add')?.addEventListener('click',cashForm);
 if($('#message'))bindForm('#message',async f=>{await MM.api({action:'message',text:f.get('text')});await load();toast('Team message saved')});

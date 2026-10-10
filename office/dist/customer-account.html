@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Your lawn care account</title>
+    <link rel="icon" href="brand-icon.png" />
+    <link rel="stylesheet" href="crew-live.css" />
+    <link rel="stylesheet" href="office-live.css" />
+    <link rel="stylesheet" href="business-branding.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to account</a>
+    <div class="customer-account">
+      <header>
+        <h1>Your lawn care account</h1>
+        <button id="account-logout" class="button" hidden>Sign out</button>
+      </header>
+      <main id="main"><p role="status">Loading your account…</p></main>
+      <footer>
+        <img
+          src="powered-by-mowmatter.svg"
+          class="powered-mark"
+          alt="Powered by MowMatter"
+          width="210"
+          height="48"
+        />
+        <p>
+          <a href="https://mowmatter.com/privacy.html">Privacy</a> ·
+          <a href="https://mowmatter.com/terms.html">Terms</a>
+        </p>
+      </footer>
+    </div>
+    <dialog id="dialog">
+      <button id="close-dialog" aria-label="Close invoice">×</button>
+      <div id="dialog-content"></div>
+    </dialog>
+    <script src="mm-client.js"></script>
+    <script src="business-branding.js"></script>
+    <script src="customer-account.js"></script>
+  </body>
+</html>

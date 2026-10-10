@@ -7,7 +7,7 @@ const preferenceKey='mm-launch-updates-pending';
 function pendingPreference(){const value=sessionStorage.getItem(preferenceKey);return value==='true'?true:value==='false'?false:undefined}
 function rememberPreference(value){if(typeof value==='boolean')sessionStorage.setItem(preferenceKey,String(value))}
 async function saveLaunchUpdates(enabled){if(typeof enabled!=='boolean'||!session)throw Error('Sign in to save your update preference');if(session.expires_at<Date.now()+30000)await refresh();const response=await fetch(base+'/rest/v1/rpc/mm_launch_updates',{method:'POST',headers:{apikey:key,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify({p_enabled:enabled}),signal:AbortSignal.timeout(20000)});if(!response.ok)throw Error('Signed in, but your launch-update preference could not be saved. Please retry.');sessionStorage.removeItem(preferenceKey);return response.json()}
-const redirect=()=>location.origin+'/index.html';
+const redirect=()=>location.pathname.endsWith('/customer-account.html')?location.origin+location.pathname+location.search:location.origin+'/index.html';
 // PKCE keeps OAuth tokens out of callback URLs. The verifier stays in this tab.
 const oauthKey='mm-google-pkce-v1';
 const base64url=bytes=>btoa(String.fromCharCode(...bytes)).replaceAll('+','-').replaceAll('/','_').replace(/=+$/,'');
