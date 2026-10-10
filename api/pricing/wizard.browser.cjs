@@ -1,3 +1,67 @@
-const {chromium}=require('playwright');
-const assert=require('node:assert/strict');
-(async()=>{const browser=await chromium.launch({headless:true});try{for(const width of [390,1280]){const page=await browser.newPage({viewport:{width,height:900}});const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('http://localhost:8080/services-preview.html');await page.locator('#start-setup').click();assert(await page.locator('#setup-dialog').isVisible());await page.locator('#setup-city').fill('Palm Coast, FL');await page.locator('#setup-next').click();await page.locator('[data-person-field=hourlyCents]').fill('30');await page.locator('#add-person').click();const person=page.locator('[data-person]').last();await person.locator('[data-person-field=name]').fill('Crew worker');await person.locator('[data-person-field=hourlyCents]').fill('20');await person.locator('[data-person-field=burdenBps]').fill('20');await page.locator('[data-crew-person]').last().check();await page.locator('#setup-next').click();assert((await page.locator('.labor-result').textContent()).includes('$54.00'));await page.locator('#setup-next').click();await page.locator('#setup-package-price').fill('95');await page.locator('#setup-next').click();await page.locator('#setup-next').click();assert((await page.locator('#setup-error').textContent()).includes('approve'));await page.locator('#setup-approved').check();await page.locator('#setup-next').click();assert(!(await page.locator('#setup-dialog').isVisible()));assert((await page.locator('#quote-output').textContent()).includes('$95.00'));const record=await page.evaluate(()=>JSON.parse(localStorage.getItem('mm-labor-preview-v1')));assert.equal(record.people.length,2);await page.reload();await page.locator('#start-setup').click();await page.locator('#setup-next').click();assert.equal(await page.locator('[data-person]').count(),2);await page.locator('#close-setup').click();assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert.deepEqual(errors,[]);console.log('PASS guided setup, labor, approval, persistence, no overflow/errors at '+width+'px');await page.close();}}finally{await browser.close();}})().catch(e=>{console.error(e);process.exit(1)});
+const { chromium } = require("playwright");
+const assert = require("node:assert/strict");
+(async () => {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    for (const width of [390, 1280]) {
+      const page = await browser.newPage({ viewport: { width, height: 900 } });
+      const errors = [];
+      page.on("pageerror", (e) => errors.push(e.message));
+      await page.goto("http://localhost:8080/services-preview.html");
+      await page.locator("#start-setup").click();
+      assert(await page.locator("#setup-dialog").isVisible());
+      await page.locator("#setup-city").fill("Palm Coast, FL");
+      await page.locator("#setup-next").click();
+      await page.locator("[data-person-field=hourlyCents]").fill("30");
+      await page.locator("#add-person").click();
+      const person = page.locator("[data-person]").last();
+      await person.locator("[data-person-field=name]").fill("Crew worker");
+      await person.locator("[data-person-field=hourlyCents]").fill("20");
+      await person.locator("[data-person-field=burdenBps]").fill("20");
+      await page.locator("[data-crew-person]").last().check();
+      await page.locator("#setup-next").click();
+      assert(
+        (await page.locator(".labor-result").textContent()).includes("$54.00"),
+      );
+      await page.locator("#setup-next").click();
+      await page.locator("#setup-package-price").fill("95");
+      await page.locator("#setup-next").click();
+      await page.locator("#setup-next").click();
+      assert(
+        (await page.locator("#setup-error").textContent()).includes("approve"),
+      );
+      await page.locator("#setup-approved").check();
+      await page.locator("#setup-next").click();
+      assert(!(await page.locator("#setup-dialog").isVisible()));
+      assert(
+        (await page.locator("#quote-output").textContent()).includes("$95.00"),
+      );
+      const record = await page.evaluate(() =>
+        JSON.parse(localStorage.getItem("mm-labor-preview-v1")),
+      );
+      assert.equal(record.people.length, 2);
+      await page.reload();
+      await page.locator("#start-setup").click();
+      await page.locator("#setup-next").click();
+      assert.equal(await page.locator("[data-person]").count(), 2);
+      await page.locator("#close-setup").click();
+      assert(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      );
+      assert.deepEqual(errors, []);
+      console.log(
+        "PASS guided setup, labor, approval, persistence, no overflow/errors at " +
+          width +
+          "px",
+      );
+      await page.close();
+    }
+  } finally {
+    await browser.close();
+  }
+})().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
