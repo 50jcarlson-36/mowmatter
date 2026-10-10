@@ -356,3 +356,50 @@ test("daily review uses company-local daytime and requires forecast coverage", (
     "review",
   );
 });
+
+test("direct OpenAI sends private normalized images and strict nonstored output", async () => {
+  const { directOpenAI } = await import("../operations/photo-insights.mjs");
+  const result = await directOpenAI({
+    env: {
+      OPENAI_API_KEY: "test-secret",
+      PHOTO_INSIGHTS_MODEL: "openai/configured",
+    },
+    images: [{ id: pid, bytes: Buffer.from("jpeg") }],
+    pids: [pid],
+    serviceIds: [],
+    catalog: { services: [] },
+    fetcher: async (url, options) => {
+      assert.equal(url, "https://api.openai.com/v1/responses");
+      assert.equal(options.headers.Authorization, "Bearer test-secret");
+      const body = JSON.parse(options.body);
+      assert.equal(body.store, false);
+      assert.equal(body.model, "configured");
+      assert.equal(body.text.format.strict, true);
+      assert.match(
+        body.input[0].content[2].image_url,
+        /^data:image\/jpeg;base64,/,
+      );
+      return Response.json({
+        status: "completed",
+        output: [
+          { content: [{ type: "output_text", text: JSON.stringify(output) }] },
+        ],
+      });
+    },
+  });
+  assert.deepEqual(result, output);
+});
+test("direct OpenAI refuses partial or refused responses", async () => {
+  const { directOpenAI } = await import("../operations/photo-insights.mjs");
+  await assert.rejects(
+    directOpenAI({
+      env: { OPENAI_API_KEY: "fake", PHOTO_INSIGHTS_MODEL: "configured" },
+      images: [],
+      pids: [],
+      serviceIds: [],
+      catalog: { services: [] },
+      fetcher: async () => Response.json({ status: "incomplete", output: [] }),
+    }),
+    /no complete assessment/,
+  );
+});

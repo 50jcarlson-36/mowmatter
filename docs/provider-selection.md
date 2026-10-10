@@ -25,7 +25,7 @@ Sources: https://www.weather.gov/documentation/services-web-api ; https://open-m
 
 ## Required activation and remaining work
 
-Render API needs the existing Supabase server secret (never a browser key) plus AI_GATEWAY_API_KEY, PHOTO_INSIGHTS_MODEL, PHOTO_INSIGHTS_ENABLED=true and PHOTO_INSIGHTS_DAILY_LIMIT=an integer between 1 and 1000. No provider calls were enabled or purchased by this change. A company’s mow_insight_allowances must be enabled and funded server-side; owners cannot grant themselves credits.
+Render API needs the existing Supabase server secret (never a browser key) plus OPENAI_API_KEY (direct OpenAI; preferred when present) or AI_GATEWAY_API_KEY, PHOTO_INSIGHTS_MODEL, PHOTO_INSIGHTS_ENABLED=true and PHOTO_INSIGHTS_DAILY_LIMIT=an integer between 1 and 1000. No provider calls were enabled or purchased by this change. A company’s mow_insight_allowances must be enabled and funded server-side; owners cannot grant themselves credits.
 
 The paid add-on Stripe product, recurring allowance replenishment, trial expiry and purchase webhook are not implemented. Keep assessment activation restricted to an explicitly approved pilot until those are connected and pricing is approved. Suggested economics should be based on measured average/p95 image costs; do not advertise an unlimited assessment plan.
 
@@ -38,3 +38,5 @@ A crashed processing assessment may require support reconciliation. There is int
 Production migration was applied using authenticated Supabase SQL, with privilege verification and rollback-only settings tests. The CLI-generated SQL file is an idempotent schema artifact, not evidence that Supabase migration history was registered. Reconcile migration history before a CLI db push.
 
 Deploy Office, Marketing and API at the same reviewed commit; verify authenticated owner/customer sessions and actual model output before marking Photo Insights live. Cloudflare branch builds previously failed, and Render authentication/deployment remains a separate gate.
+
+The direct OpenAI path uses the Responses API with store:false and strict structured output. Set PHOTO_INSIGHTS_MODEL to an evaluated OpenAI vision model ID when using OPENAI_API_KEY; an openai/ prefix is accepted. Never put the key into static frontend configuration. The API key alone does not enable assessment usage.
