@@ -403,3 +403,12 @@ test("direct OpenAI refuses partial or refused responses", async () => {
     /no complete assessment/,
   );
 });
+
+test("photo provider accepts the existing Render key name and prefers standard name", async () => {
+  const { photoAPIKey } = await import("../operations/photo-insights.mjs");
+  assert.equal(photoAPIKey({ OpenAI_api_key: "legacy" }), "legacy");
+  assert.equal(
+    photoAPIKey({ OpenAI_api_key: "legacy", OPENAI_API_KEY: "standard" }),
+    "standard",
+  );
+});
