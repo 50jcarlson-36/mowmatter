@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Yard Insights & Weather | Mow Matter Office</title>
+    <link rel="icon" href="brand-icon.png" />
+    <link rel="stylesheet" href="services-preview.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a href="index.html">MOW MATTER OFFICE</a
+      ><a href="services-preview.html">Services & pricing</a>
+    </header>
+    <main class="page">
+      <p class="eyebrow">YOUR FIELD INTELLIGENCE</p>
+      <h1>Plan around the weather.<br />See opportunities in the yard.</h1>
+      <p id="status" role="status" aria-live="polite">Loading your business…</p>
+      <section class="card">
+        <h2>Your week, weather-aware</h2>
+        <label>Week starting<input type="date" id="week-start" /></label
+        ><button id="week" type="button">Review every scheduled visit</button>
+        <div id="week-output"></div>
+        <h3>Visit weather</h3>
+        <label>Choose a visit<select id="jobs"></select></label
+        ><button id="weather" type="button">Check live forecast</button>
+        <p class="hint">
+          Uses the visit's saved coordinates. Nothing is rescheduled
+          automatically.
+        </p>
+        <div id="forecast"></div>
+      </section>
+      <section class="card">
+        <h2>Yard Photo Insights</h2>
+        <p id="allowance"></p>
+        <button id="load-photos" type="button">Choose visit photos</button>
+        <fieldset id="photo-picker">
+          <legend>Select up to three photos</legend>
+          <p>Load photos from the selected visit.</p>
+        </fieldset>
+        <p class="hint">
+          Use photos uploaded to the selected visit by your crew. Only
+          authorized photos can be analyzed.
+        </p>
+        <label
+          ><input type="checkbox" id="analysis-consent" /> Use one activated
+          assessment from my company's allowance. Photos will be processed by
+          our configured AI provider.</label
+        ><button id="analyze" type="button">Analyze selected photos</button>
+        <div id="assessments"></div>
+        <h3>Customer decisions</h3>
+        <div id="decisions"></div>
+      </section>
+      <section class="card">
+        <h2>Connect a homeowner</h2>
+        <p>
+          The homeowner must create and confirm an account using the email saved
+          on their customer record.
+        </p>
+        <label>Customer<select id="customers"></select></label
+        ><label
+          ><input type="checkbox" id="access-consent" /> Grant this confirmed
+          customer access to their optional offers.</label
+        ><button id="link-customer" type="button">
+          Enable customer access
+        </button>
+      </section>
+      <dialog id="offer-dialog">
+        <form id="offer-form" class="form">
+          <h2>Review an optional improvement</h2>
+          <label>Title<input name="title" required maxlength="100" /></label
+          ><label
+            >Reviewed observation<textarea
+              name="description"
+              required
+              maxlength="1000"
+            ></textarea></label
+          ><label
+            >Catalog service<select name="service" required></select></label
+          ><label
+            >Confirmed lawn area (sq ft, if applicable)<input
+              name="area"
+              type="number"
+              min="1" /></label
+          ><label
+            >Confirmed time (minutes, if applicable)<input
+              name="minutes"
+              type="number"
+              min="1"
+              max="1440" /></label
+          ><label
+            >Workers<input
+              name="workers"
+              type="number"
+              min="1"
+              max="100"
+              value="1" /></label
+          ><label
+            >Confirmed quantity (if applicable)<input
+              name="quantity"
+              type="number"
+              min="1"
+              value="1"
+          /></label>
+          <p>
+            One-time optional work. The server uses published company rates.
+            Acceptance does not charge or promise a service day.
+          </p>
+          <label
+            ><input name="approved" type="checkbox" required /> I reviewed scope
+            and confirm this work is not included in their existing
+            service.</label
+          >
+          <p id="offer-status" role="status"></p>
+          <button type="submit">Publish optional quote</button
+          ><button id="close-offer" type="button">Cancel</button>
+        </form>
+      </dialog>
+    </main>
+    <script src="mm-client.js"></script>
+    <script src="property-config.js"></script>
+    <script type="module" src="operations.mjs"></script>
+  </body>
+</html>

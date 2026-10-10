@@ -6,9 +6,11 @@ async function check(dir) {
     if (["node_modules", ".git"].includes(entry.name)) continue;
     const path = resolve(dir, entry.name);
     if (entry.isDirectory()) await check(path);
-    else if (/\.(mjs|cjs|js)$/.test(entry.name)) execFileSync(process.execPath, ["--check", path], { stdio: "inherit" });
+    else if (/\.(mjs|cjs|js)$/.test(entry.name))
+      execFileSync(process.execPath, ["--check", path], { stdio: "inherit" });
   }
 }
 await check(resolve("."));
 await check(resolve("../office/dist"));
+await check(resolve("../web/dist"));
 console.log("API and Office JavaScript syntax checks passed.");

@@ -481,3 +481,94 @@ mountSetupWizard({
     }
   },
 });
+
+// Company publishing is explicit; loading never silently replaces a local draft.
+let companyRevision = null;
+async function companyAction(action, body = {}) {
+  if (!window.MM) throw Error("Open this workspace from Office.");
+  const session = await window.MM.ensureSession();
+  const workspace = await window.MM.api({ action: "list" });
+  if (workspace.profile?.role !== "owner")
+    throw Error("Business owner access required.");
+  const response = await fetch(
+    window.MM_PROPERTY_API + "/api/operations/" + action,
+    {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + session.access_token,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ company_id: workspace.company.id, ...body }),
+      signal: AbortSignal.timeout(20000),
+    },
+  );
+  const value = await response.json();
+  if (!response.ok) throw Error(value.error || "Company settings unavailable.");
+  return value;
+}
+if ($("load-company"))
+  $("load-company").onclick = async () => {
+    try {
+      const value = await companyAction("settings");
+      companyRevision = value.settings?.revision || 0;
+      if (value.settings) {
+        if (
+          !window.confirm(
+            "Replace this device draft with your published company rates?",
+          )
+        )
+          return;
+        catalog = validateCatalog(value.settings.catalog);
+        renderServices();
+        renderPackages();
+        renderOffers();
+        $("visit-minimum").value = catalog.visitMinimumCents / 100;
+        renderAddons();
+        quote();
+        localStorage.setItem(
+          "mm-labor-preview-v1",
+          JSON.stringify(value.settings.labor),
+        );
+        save();
+      }
+      status(
+        value.settings
+          ? "Published company rates loaded."
+          : "No published rates yet. Review your draft and publish when ready.",
+      );
+    } catch (e) {
+      status(e.message);
+    }
+  };
+if ($("publish-company"))
+  $("publish-company").onclick = async () => {
+    const button = $("publish-company");
+    button.disabled = true;
+    try {
+      if (companyRevision === null)
+        throw Error("Load company rates first to check the current revision.");
+      if (
+        !window.confirm(
+          "Publish these reviewed rates for your business? Existing customer contracts will remain unchanged.",
+        )
+      )
+        return;
+      const labor = JSON.parse(
+        localStorage.getItem("mm-labor-preview-v1") || "{}",
+      );
+      const value = await companyAction("save-settings", {
+        catalog: validateCatalog(catalog),
+        labor,
+        expected_revision: companyRevision,
+        confirm_owner_review: true,
+      });
+      companyRevision = value.revision;
+      status(
+        "Company rates published. Quote previews still require owner review.",
+      );
+    } catch (e) {
+      status(e.message);
+    } finally {
+      button.disabled = false;
+    }
+  };

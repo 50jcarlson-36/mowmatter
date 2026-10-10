@@ -27,13 +27,18 @@
           </p>
         </div>
         <div class="actions">
-          <button id="export" class="button secondary">Export draft</button
+          <button id="load-company" class="button secondary">
+            Load company rates</button
+          ><button id="publish-company" class="button">
+            Publish reviewed rates</button
+          ><button id="export" class="button secondary">Export draft</button
           ><button id="save" class="button">Save on this device</button>
         </div>
       </div>
       <p class="notice">
-        This preview stores a draft in this browser only. It does not publish
-        rates, look up properties, send quotes, book jobs, or charge customers.
+        Device saving keeps a local draft. Publish reviewed rates explicitly to
+        save them to your business. Quote previews do not send offers, book jobs
+        or charge customers.
       </p>
       <section class="setup-banner">
         <div>
@@ -288,6 +293,8 @@
         ><button id="setup-next" class="button">Continue →</button>
       </footer>
     </dialog>
+    <script src="mm-client.js"></script>
+    <script src="property-config.js"></script>
     <script src="mm-client.js"></script>
     <script src="property-config.js"></script>
     <script type="module" src="services-preview.mjs"></script>
