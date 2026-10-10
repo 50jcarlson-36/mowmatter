@@ -1,0 +1,235 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {
+  calculateQuote,
+  priceService,
+  homeownerQuote,
+  PLATFORM_FEE_BPS,
+} from "../../office/dist/pricing-engine.mjs";
+const catalog = () => ({
+  version: 4,
+  visitMinimumCents: 0,
+  services: [
+    {
+      id: "mow",
+      name: "Mowing",
+      mode: "area",
+      priceCents: 800,
+      minimumCents: 3500,
+    },
+    { id: "edge", name: "Edging", mode: "fixed", priceCents: 1000 },
+    {
+      id: "weed",
+      name: "Weeding",
+      mode: "hourly",
+      priceCents: 5000,
+      hourBasis: "worker",
+    },
+    { id: "shrub", name: "Shrubs", mode: "unit", priceCents: 1500 },
+  ],
+  packages: [
+    {
+      id: "basic",
+      name: "Basic care",
+      mode: "fixed",
+      priceCents: 5000,
+      serviceIds: ["mow", "edge"],
+    },
+  ],
+});
+const request = () => ({
+  serviceIds: ["mow"],
+  inputs: { areaConfirmed: true, areaSqft: 5000, minutes: 45, workers: 2 },
+  visitsPerYear: 26,
+});
+test("area is confirmed lawn, not the provider lot size", () => {
+  const r = request();
+  r.inputs.areaConfirmed = false;
+  assert.throws(() => calculateQuote(catalog(), r), /Confirm mowable/);
+});
+test("area rate and service minimum use integer cents", () => {
+  assert.equal(calculateQuote(catalog(), request()).perVisitCents, 4000);
+  const r = request();
+  r.inputs.areaSqft = 1000;
+  assert.equal(calculateQuote(catalog(), r).perVisitCents, 3500);
+});
+test("worker hour multiplies workers exactly once", () =>
+  assert.equal(
+    priceService(catalog().services[2], request().inputs).amountCents,
+    7500,
+  ));
+test("crew hour does not multiply by workers", () => {
+  const s = { ...catalog().services[2], hourBasis: "crew" };
+  assert.equal(priceService(s, request().inputs).amountCents, 3750);
+});
+test("band boundary is inclusive and oversize lawns need review", () => {
+  const s = {
+    id: "bands",
+    name: "Mow",
+    mode: "bands",
+    bands: [
+      { upToSqft: 5000, priceCents: 4500 },
+      { upToSqft: 10000, priceCents: 6500 },
+    ],
+  };
+  assert.equal(priceService(s, request().inputs).amountCents, 4500);
+  assert.equal(
+    priceService(s, { ...request().inputs, areaSqft: 5001 }).amountCents,
+    6500,
+  );
+  assert.throws(
+    () => priceService(s, { ...request().inputs, areaSqft: 10001 }),
+    /larger/,
+  );
+});
+test("unordered pricing bands are rejected", () =>
+  assert.throws(
+    () =>
+      priceService(
+        {
+          mode: "bands",
+          bands: [
+            { upToSqft: 5000, priceCents: 1 },
+            { upToSqft: 4000, priceCents: 2 },
+          ],
+        },
+        request().inputs,
+      ),
+    /increase/,
+  ));
+test("fixed package bills once, includes service names", () => {
+  const q = calculateQuote(catalog(), {
+    ...request(),
+    packageId: "basic",
+    serviceIds: [],
+  });
+  assert.equal(q.perVisitCents, 5000);
+  assert.equal(q.lines.length, 1);
+  assert.deepEqual(q.lines[0].includedNames, ["Mowing", "Edging"]);
+});
+test("included service and duplicate add-ons cannot be billed twice", () => {
+  assert.throws(
+    () =>
+      calculateQuote(catalog(), {
+        ...request(),
+        packageId: "basic",
+        serviceIds: ["edge"],
+      }),
+    /already included/,
+  );
+  assert.throws(
+    () =>
+      calculateQuote(catalog(), { ...request(), serviceIds: ["edge", "edge"] }),
+    /twice/,
+  );
+});
+test("discount applies only to package; add-on keeps approved price", () => {
+  const c = catalog();
+  c.packages[0].mode = "discount";
+  c.packages[0].discountBps = 1000;
+  const q = calculateQuote(c, {
+    ...request(),
+    packageId: "basic",
+    serviceIds: ["shrub"],
+    inputs: { ...request().inputs, units: { shrub: 2 } },
+  });
+  assert.equal(q.packageDiscountCents, 500);
+  assert.equal(q.perVisitCents, 7500);
+});
+test("company minimum applies after package discount and adjustment", () => {
+  const c = catalog();
+  c.visitMinimumCents = 6000;
+  const q = calculateQuote(c, {
+    ...request(),
+    packageId: "basic",
+    serviceIds: [],
+    accessAdjustmentCents: 500,
+  });
+  assert.equal(q.minimumAdjustmentCents, 500);
+  assert.equal(q.perVisitCents, 6000);
+});
+test("26 visits use 26 annual visits, not two per month", () => {
+  const q = calculateQuote(catalog(), {
+    ...request(),
+    packageId: "basic",
+    serviceIds: [],
+  });
+  assert.equal(q.annualCents, 130000);
+  assert.equal(q.monthlyAverageCents, 10833);
+});
+test("fees follow free, growth, scale tiers", () => {
+  assert.deepEqual(PLATFORM_FEE_BPS, { starter: 350, growth: 250, scale: 150 });
+  for (const [tier, amount] of [
+    ["starter", 175],
+    ["growth", 125],
+    ["scale", 75],
+  ])
+    assert.equal(
+      calculateQuote(
+        catalog(),
+        { ...request(), packageId: "basic", serviceIds: [] },
+        { tier },
+      ).ownerOnly.platformFeeCents,
+      amount,
+    );
+});
+test("tax, processing fees and cost produce transparent contribution", () => {
+  const q = calculateQuote(
+    catalog(),
+    {
+      ...request(),
+      packageId: "basic",
+      serviceIds: [],
+      taxBps: 700,
+      estimatedCostCents: 2500,
+    },
+    { tier: "growth", processingBps: 290, processingFixedCents: 30 },
+  );
+  assert.equal(q.perVisitCents, 5350);
+  assert.equal(q.ownerOnly.processingFeeCents, 185);
+  assert.equal(q.ownerOnly.contributionCents, 2190);
+});
+test("customer payload excludes cost, fee and contribution data", () => {
+  const publicQuote = homeownerQuote(calculateQuote(catalog(), request()));
+  assert.equal(publicQuote.ownerOnly, undefined);
+  assert.equal(publicQuote.monthlyAverageCents, undefined);
+  assert.equal(JSON.stringify(publicQuote).includes("contribution"), false);
+});
+test("inactive, unknown, inspection and empty selections need review", () => {
+  const c = catalog();
+  c.services[0].active = false;
+  assert.throws(() => calculateQuote(c, request()), /inactive/);
+  assert.throws(
+    () => calculateQuote(catalog(), { ...request(), serviceIds: ["missing"] }),
+    /missing/,
+  );
+  assert.throws(
+    () => priceService({ mode: "inspection", name: "Tree work" }, {}),
+    /owner review/,
+  );
+  assert.throws(
+    () => calculateQuote(catalog(), { ...request(), serviceIds: [] }),
+    /Choose/,
+  );
+});
+test("negative, infinite, fractional-cent and unreasonable values reject", () => {
+  for (const priceCents of [-1, Infinity, 1.2])
+    assert.throws(() => priceService({ mode: "fixed", priceCents }, {}));
+  assert.throws(() =>
+    calculateQuote(catalog(), { ...request(), visitsPerYear: 0 }),
+  );
+  assert.throws(() =>
+    calculateQuote(catalog(), { ...request(), visitsPerYear: 26.5 }),
+  );
+  assert.throws(() =>
+    priceService(catalog().services[2], { minutes: 45, workers: 1.5 }),
+  );
+  assert.throws(() =>
+    calculateQuote(catalog(), { ...request(), accessAdjustmentCents: -500 }),
+  );
+});
+test("all drafts stay owner-review; no implied booking or charge", () => {
+  const q = calculateQuote(catalog(), request());
+  assert.equal(q.status, "owner_review");
+  assert.equal(q.warnings.length, 2);
+});

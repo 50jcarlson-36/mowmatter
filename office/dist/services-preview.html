@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Services & Pricing Preview — Mow Matter Office</title>
+    <link rel="icon" href="brand-icon.png" />
+    <link rel="stylesheet" href="services-preview.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to pricing</a>
+    <header class="topbar">
+      <a class="brand" href="index.html"
+        ><img src="brand-icon.png" width="36" height="36" alt="" /><span
+          >MOW MATTER<small>THE CHEMISTRY OF CURB APPEAL.</small></span
+        ></a
+      ><a class="back" href="index.html">Office overview ↗</a>
+    </header>
+    <main id="main">
+      <div class="page-heading">
+        <div>
+          <p class="eyebrow">MOW MATTER OFFICE · PRICING WORKSPACE PREVIEW</p>
+          <h1>Your services.<br />Your prices. Your rules.</h1>
+          <p class="lede">
+            Set your rates once. See exactly what a customer would be quoted.
+          </p>
+        </div>
+        <div class="actions">
+          <button id="load-company" class="button secondary">
+            Load company rates</button
+          ><button id="publish-company" class="button">
+            Publish reviewed rates</button
+          ><button id="export" class="button secondary">Export draft</button
+          ><button id="save" class="button">Save on this device</button>
+        </div>
+      </div>
+      <p class="notice">
+        Device saving keeps a local draft. Publish reviewed rates explicitly to
+        save them to your business. Quote previews do not send offers, book jobs
+        or charge customers.
+      </p>
+      <section class="setup-banner">
+        <div>
+          <p class="eyebrow">START SOLO. GROW WITH A TEAM.</p>
+          <h2>Set up your services and labor together.</h2>
+          <p>
+            A guided setup for personnel, crews, costs, pricing and a first
+            quote.
+          </p>
+        </div>
+        <button id="start-setup" class="button">Open guided setup →</button>
+      </section>
+      <nav class="tabs" aria-label="Pricing sections">
+        <a href="#services">My services</a><a href="#packages">Packages</a
+        ><a href="#quick-quote">Quick quote</a
+        ><a href="#auto-settings">Auto-quote rules</a>
+      </nav>
+      <div class="workspace">
+        <div class="editor">
+          <section class="card" id="services">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">01 · MY SERVICES</p>
+                <h2>Keep pricing simple.</h2>
+                <p>
+                  Pick a method for each service. Only the settings you need
+                  will appear.
+                </p>
+              </div>
+              <button id="add-service" class="button secondary">
+                + Add service
+              </button>
+            </div>
+            <div id="service-list"></div>
+          </section>
+          <section class="card" id="packages">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">02 · PACKAGES</p>
+                <h2>A clear offer. One price.</h2>
+                <p>
+                  Bundle services at a fixed visit price or a discount on your
+                  service rates.
+                </p>
+              </div>
+              <button id="add-package" class="button secondary">
+                + Add package
+              </button>
+            </div>
+            <div id="package-list"></div>
+          </section>
+          <section class="card" id="quick-quote">
+            <p class="eyebrow">03 · QUICK QUOTE</p>
+            <h2>Try a yard. Adjust your offer.</h2>
+            <p>Change the inputs to see the price update immediately.</p>
+            <form id="quote-inputs" class="form-grid">
+              <label class="wide"
+                >Customer / property label<input
+                  id="property-label"
+                  value="Your lawn care estimate"
+                  maxlength="160"
+              /></label>
+              <label
+                >Confirmed lawn area (sq ft)<input
+                  id="area"
+                  type="number"
+                  value="5000"
+                  min="1"
+                  max="10000000"
+                  step="1"
+                  inputmode="numeric"
+              /></label>
+              <label
+                >Planned annual visits<select id="frequency">
+                  <option value="52">Weekly · 52 visits/year</option>
+                  <option value="26" selected>
+                    Every 2 weeks · 26 visits/year
+                  </option>
+                  <option value="12">Monthly · 12 visits/year</option>
+                  <option value="1">One-time · 1 visit</option>
+                </select></label
+              >
+              <label class="check wide"
+                ><input id="area-confirmed" type="checkbox" checked /> I
+                confirmed the mowable lawn area. This is not total lot
+                size.</label
+              >
+              <label
+                >On-site minutes<input
+                  id="minutes"
+                  type="number"
+                  value="45"
+                  min="1"
+                  max="1440"
+                  inputmode="numeric"
+              /></label>
+              <label
+                >Workers on this job<input
+                  id="workers"
+                  type="number"
+                  value="2"
+                  min="1"
+                  max="100"
+                  step="1"
+                  inputmode="numeric"
+              /></label>
+              <label class="wide"
+                >Choose an offer<select id="offer"></select
+              ></label>
+              <fieldset class="wide">
+                <legend>Add services to this visit</legend>
+                <div id="addons"></div>
+              </fieldset>
+              <label
+                >Extra access / work charge ($)<input
+                  id="adjustment"
+                  type="number"
+                  value="0"
+                  min="0"
+                  step="0.01"
+                  inputmode="decimal"
+              /></label>
+              <label
+                >Company visit minimum ($)<input
+                  id="visit-minimum"
+                  type="number"
+                  value="45"
+                  min="0"
+                  step="0.01"
+                  inputmode="decimal"
+              /></label>
+              <details class="wide">
+                <summary>Internal costs & estimated fees</summary>
+                <div class="form-grid inset">
+                  <label
+                    >Total job costs ($)<input
+                      id="job-cost"
+                      type="number"
+                      value="25"
+                      min="0"
+                      step="0.01"
+                      inputmode="decimal"
+                  /></label>
+                  <label
+                    >Subscription level<select id="tier">
+                      <option value="starter">Free · 3.5%</option>
+                      <option value="growth">Growth · 2.5%</option>
+                      <option value="scale">Scale · 1.5%</option>
+                    </select></label
+                  >
+                  <label
+                    >Processing estimate (%)<input
+                      id="processing-rate"
+                      type="number"
+                      value="0"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      inputmode="decimal"
+                  /></label>
+                  <label
+                    >Processing estimate per payment ($)<input
+                      id="processing-fixed"
+                      type="number"
+                      value="0"
+                      min="0"
+                      step="0.01"
+                      inputmode="decimal"
+                  /></label>
+                  <label
+                    >Applicable tax (%)<input
+                      id="tax"
+                      type="number"
+                      value="0"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      inputmode="decimal"
+                  /></label>
+                </div>
+                <p class="hint">
+                  Enter your actual processing terms. Zero means no estimate
+                  entered. Tax and fees are planning estimates; no Stripe
+                  payment is created.
+                </p>
+              </details>
+            </form>
+          </section>
+          <section class="card" id="auto-settings">
+            <p class="eyebrow">04 · AUTO-QUOTE RULES</p>
+            <h2>Your rates drive the quote.</h2>
+            <p>
+              Instant Quotes is a separate add-on. Manual quotes remain
+              available without it.
+            </p>
+            <ol class="steps">
+              <li>Look up the homeowner’s address and parcel.</li>
+              <li>
+                Confirm mowable grass area, access, and the service requested.
+              </li>
+              <li>
+                Apply your approved rates, package, minimum, and service
+                frequency.
+              </li>
+              <li>
+                Send for owner review when information is missing or the job
+                falls outside your rules.
+              </li>
+            </ol>
+            <p class="notice compact">
+              Paid add-on activation, catalog publishing, and homeowner checkout
+              are not connected in this preview. An AI model must never invent
+              your prices.
+            </p>
+          </section>
+        </div>
+        <aside class="quote-panel" aria-label="Live quote preview">
+          <section class="card preview">
+            <p class="eyebrow">LIVE QUOTE PREVIEW</p>
+            <h2>See it before you send it.</h2>
+            <div class="view-toggle" role="group" aria-label="Quote audience">
+              <button class="active" id="customer-view" aria-pressed="true">
+                Customer view</button
+              ><button id="owner-view" aria-pressed="false">Owner view</button>
+            </div>
+            <div id="quote-output"></div>
+            <p class="hint">Preview only · Approval required · Nothing sent</p>
+          </section>
+        </aside>
+      </div>
+    </main>
+    <div id="status" role="status" aria-live="polite"></div>
+    <dialog id="setup-dialog" aria-labelledby="setup-title">
+      <div class="wizard-head">
+        <div>
+          <p class="eyebrow">GUIDED BUSINESS SETUP</p>
+          <h2 id="setup-title">Build a pricing plan that fits your work.</h2>
+        </div>
+        <button
+          id="close-setup"
+          class="button secondary"
+          aria-label="Close guided setup"
+        >
+          ×
+        </button>
+      </div>
+      <nav id="setup-progress" aria-label="Setup progress"></nav>
+      <div id="setup-body"></div>
+      <p id="setup-error" role="alert"></p>
+      <footer class="wizard-footer">
+        <button id="setup-back" class="button secondary">Back</button
+        ><button id="setup-next" class="button">Continue →</button>
+      </footer>
+    </dialog>
+    <script src="mm-client.js"></script>
+    <script src="property-config.js"></script>
+    <script src="mm-client.js"></script>
+    <script src="property-config.js"></script>
+    <script type="module" src="services-preview.mjs"></script>
+  </body>
+</html>

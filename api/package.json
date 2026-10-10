@@ -5,12 +5,21 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node --test server.test.mjs billing/billing.test.mjs growth/checkout.test.mjs"
+    "test": "node --test server.test.mjs billing/billing.test.mjs growth/checkout.test.mjs pricing/*.test.mjs",
+    "format": "prettier --write pricing scheduling operations weather scripts ../office/dist/*engine.mjs ../office/dist/setup-wizard.mjs ../office/dist/services-preview.* ../office/dist/operations.* ../web/dist/yard-insights.mjs",
+    "format:check": "prettier --check pricing scheduling operations weather scripts ../office/dist/*engine.mjs ../office/dist/setup-wizard.mjs ../office/dist/services-preview.* ../office/dist/operations.* ../web/dist/yard-insights.mjs",
+    "check": "node scripts/check-drift.mjs && node scripts/check-source.mjs && npm run format:check && npm test",
+    "sync:assets": "node scripts/check-drift.mjs --sync"
   },
   "engines": {
     "node": "22.x"
   },
   "dependencies": {
+    "ai": "7.0.137",
+    "sharp": "0.35.5",
     "stripe": "22.6.0"
+  },
+  "devDependencies": {
+    "prettier": "3.6.2"
   }
 }
