@@ -1,4 +1,5 @@
 import { calculateQuote, homeownerQuote, validateCatalog } from './pricing-engine.mjs';
+import { mountSetupWizard } from './setup-wizard.mjs';
 const $ = id => document.getElementById(id);
 const escape = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const money = cents => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(cents/100);
@@ -130,3 +131,4 @@ $('export').onclick=()=>{
 };
 window.addEventListener('pagehide',()=>clearTimeout(statusTimer));
 renderServices();renderPackages();renderOffers();$('visit-minimum').value=catalog.visitMinimumCents/100;$('offer').value=catalog.packages[0]?.id||'';renderAddons();if(!catalog.packages.length)$('addons').querySelector('[data-addon]').checked=true;quote();
+mountSetupWizard({getCatalog:()=>catalog,onApply:(next,labor,job)=>{catalog=next;renderServices();renderPackages();renderOffers();$('visit-minimum').value=next.visitMinimumCents/100;$('minutes').value=job.minutes;$('workers').value=job.workers;$('area').value=job.areaSqft;$('job-cost').value=job.costCents/100;$('offer').value=job.packageId||'';renderAddons();if(!job.packageId)$('addons').querySelector('[data-addon]').checked=true;quote();save();try{localStorage.setItem('mm-labor-preview-v1',JSON.stringify(labor));}catch{status('Configuration applied for this session. Device saving is unavailable.');}}});

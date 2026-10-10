@@ -181,3 +181,61 @@ Reusable service catalogs, optional quote services and customer previews align w
 - https://help.getjobber.com/en/articles/products-services-list/
 - https://getjobber.zendesk.com/hc/en-us/articles/360046575473-Optional-Line-Items-on-Quotes
 - https://support.yardbook.com/matrix-pricing/
+
+## Guided setup and labor configuration extension
+
+The preview now has a five-step guided setup: **Your business → Personnel & crews → Costs & rates → Your package → Review quote**. It preserves unrelated existing services/packages and applies a reviewed configuration only after an explicit owner checkbox. Salary allocation, hourly wage cost and owner field-time cost are distinct inputs. Starter labor cost is zero until the owner enters an assumption; the wizard prevents applying a configuration without crew labor costs.
+
+Labor inputs include planning label, job role, pay-cost basis, hourly cost or annual salary/paid hours, an owner-entered burden percentage, hourly benefits/insurance cost, weekly hours and crew membership. These are private cost assumptions, not employee onboarding or payroll. No tax rates or worker classification are guessed.
+
+### From one person to several teams
+
+Use stable personnel records, then compose dated crew memberships. Link an invited Crew account to a personnel record; do not use a mutable display name as identity. A person can change crews without losing their job history. Keep operational role (crew lead, technician, driver) separate from authorization role (owner, permitted office manager, crew).
+
+For each scheduled visit, snapshot assigned personnel, expected person-specific minutes, the cost-rate version and planned travel. Validate every person's availability and overlapping assignments; do not simply multiply company headcount by job duration. More workers do not automatically cut elapsed job time proportionally. The preview's weekly capacity figure is a theoretical ceiling based on the least-available crew member, not a scheduling promise.
+
+`labor-engine.mjs` distinguishes crew clock minutes from worker-minutes, prices the actual selected crew's different hourly costs, includes allocated travel, and separately accepts other job costs. Example: two people spending 45 minutes on site represent 45 crew minutes and 90 worker-minutes. If one person joins late, actual costing must use that person's own entry, not the whole crew's duration.
+
+### Time and job accountability in the Crew mobile website
+
+Production needs **Start day / Start job / Pause / Resume / Complete job / End day**, with clear confirmation and durable server timestamps. A job completion event and an individual's time entry are separate records. Crew leaders may confirm a roster only under configured permission; edits require a reason and an audit record.
+
+Store time categories for job work, travel, loading/unloading, maintenance, office work and breaks. Keep job costing, customer billable time and paid work time distinct. Do not infer unpaid time, overtime eligibility or payroll deductions from a geofence. Geo-location can support a check-in confirmation but cannot be the only proof of working time: a mobile browser may suspend when locked or backgrounded. Provide manual recovery and owner correction when location or connectivity fails. Offline replay must be idempotent per person/event.
+
+Track estimated versus actual labor, travel, materials and allocated overhead per visit and per recurring contract. Preserve approved historical labor rate snapshots when a worker's rate changes. Record timestamp ranges in UTC with the company timezone for display and weekly summaries. `actualLabor()` provides a tested cost aggregation primitive that rejects duplicate entry IDs and overlapping time for the same person; it is not yet connected to live crew timers.
+
+### Data and permissions required for production labor
+
+| Record | Purpose |
+|---|---|
+| Personnel | Company-scoped worker ID, active status, operational role, optional linked auth user; minimal identity data |
+| Labor cost version | Effective date, wage/allocation assumptions, burden/benefits; owner/authorized finance access only |
+| Crew membership | Personnel IDs and effective dates; preserve historic assignments |
+| Availability | Working windows, time off, restrictions and scheduling conflict checks |
+| Visit labor assignment | Visit/person/crew references, estimated minutes and cost snapshot |
+| Time entry | Person, visit or non-job category, start/end, source, idempotency key, approval state |
+| Timesheet correction | Original entry, corrected revision, reason, actor and audit timestamp |
+| Job cost snapshot | Approved labor totals, materials, travel, allocated overhead, quote revision and variance |
+
+Crew users may see their assignments and permitted time entries, but not other people's wages, labor burden, salary or profitability. Homeowners never receive compensation data. Require company RLS plus separate finance permissions for cost records; membership alone must not expose compensation. Keep owner labor opportunity cost distinguishable from cash payroll cost. Production overtime and payroll export require explicit jurisdiction-specific configuration and review; this preview does not execute payroll.
+
+### AI suggestion connection
+
+`POST /api/setup/suggest` is wired into the existing API server on the review branch. It validates the Supabase user and caller-scoped owner membership, rejects oversized inputs, allowlists profile fields and service IDs, and returns structured suggestions. It never writes a catalog, sends a quote, changes a wage or creates a payment. Each suggested method must be separately selected in the wizard, and the final configuration still needs approval.
+
+The model receives city, crew headcount, **aggregate** crew/job costs, target planning margin, sample lawn area and service names/methods. Personnel names, individual wages, customer lists and addresses are excluded. Tell the owner what is sent before requesting suggestions. The app escapes returned text rather than rendering AI HTML.
+
+The installed implementation uses `ai@7.0.137`, `generateText`, `Output.object`, JSON Schema and an explicit Gateway client, verified against the package's bundled documentation. Runtime requires the server-only `AI_GATEWAY_API_KEY`, a live supported `AI_GATEWAY_MODEL` ID and `SETUP_AI_ENABLED=true`. Render uses an API key rather than Vercel OIDC. A configured direct provider key is not a Gateway key. No credentials have been added or moved, and no paid model request was made in this implementation.
+
+The current local preview limit is five attempts per company per UTC day and fifty across the API process; failures consume an attempt. Before public enablement, replace process-local counters with shared, atomic daily and concurrency reservations, add a provider/key spend budget, and verify the model/retention configuration. Restarts and multiple replicas must not reset or bypass the production budget. Configure the existing Office origin/CSP to permit the API endpoint, and verify the owner membership RLS read under a real session. If any gate fails, the wizard remains usable without AI.
+
+### Verification added
+
+Calculation, labor and mock AI endpoint tests cover owner/crew access, private-field filtering, structured-result validation, rate snapshots, overlapping entries, approval, margin division, and spend-attempt caps. The existing billing, growth and property tests also run through the API `npm test` script. A DOM interaction test passed the wizard flow, personnel cost calculation, explicit approval, saving, reopening, and preservation of package/labor configuration. A Playwright smoke script is included for 390px and 1280px widths, but visual/browser execution could not run because the environment blocked the Chromium download. Live AI generation, live RLS authorization, browser visual verification and production deployment remain separate gates. The full API suite passes 62 tests.
+
+Design research: Jobber's current Job Costing documentation tracks each employee's job time at the applicable labor rate and preserves past timesheets when labor costs change. Its time-tracking documentation separates timesheet review and payroll reporting from job operations. Mow Matter uses these principles with its mobile-web foreground/location constraints, rather than assuming native background geofencing.
+
+- https://help.getjobber.com/en/articles/job-costing/
+- https://www.getjobber.com/features/time-and-job-tracking-software/
+
+To run the included optional browser smoke test, serve `office/dist` on port 8080, install Playwright in the API test environment (`npm install --no-save playwright`), install its Chromium browser (`npx playwright install chromium`), and run `node api/pricing/wizard.browser.cjs` from the repository root. The script is not included in the normal API test command and makes no live AI or payment requests.

@@ -5,12 +5,13 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node --test server.test.mjs billing/billing.test.mjs growth/checkout.test.mjs"
+    "test": "node --test server.test.mjs billing/billing.test.mjs growth/checkout.test.mjs pricing/*.test.mjs"
   },
   "engines": {
     "node": "22.x"
   },
   "dependencies": {
+    "ai": "7.0.137",
     "stripe": "22.6.0"
   }
 }

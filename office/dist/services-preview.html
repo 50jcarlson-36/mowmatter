@@ -12,6 +12,7 @@
   <main id="main">
     <div class="page-heading"><div><p class="eyebrow">MOW MATTER OFFICE · PRICING WORKSPACE PREVIEW</p><h1>Your services.<br>Your prices. Your rules.</h1><p class="lede">Set your rates once. See exactly what a customer would be quoted.</p></div><div class="actions"><button id="export" class="button secondary">Export draft</button><button id="save" class="button">Save on this device</button></div></div>
     <p class="notice">This preview stores a draft in this browser only. It does not publish rates, look up properties, send quotes, book jobs, or charge customers.</p>
+    <section class="setup-banner"><div><p class="eyebrow">START SOLO. GROW WITH A TEAM.</p><h2>Set up your services and labor together.</h2><p>A guided setup for personnel, crews, costs, pricing and a first quote.</p></div><button id="start-setup" class="button">Open guided setup →</button></section>
     <nav class="tabs" aria-label="Pricing sections"><a href="#services">My services</a><a href="#packages">Packages</a><a href="#quick-quote">Quick quote</a><a href="#auto-settings">Auto-quote rules</a></nav>
     <div class="workspace">
       <div class="editor">
@@ -42,5 +43,7 @@
     </div>
   </main>
   <div id="status" role="status" aria-live="polite"></div>
+  <dialog id="setup-dialog" aria-labelledby="setup-title"><div class="wizard-head"><div><p class="eyebrow">GUIDED BUSINESS SETUP</p><h2 id="setup-title">Build a pricing plan that fits your work.</h2></div><button id="close-setup" class="button secondary" aria-label="Close guided setup">×</button></div><nav id="setup-progress" aria-label="Setup progress"></nav><div id="setup-body"></div><p id="setup-error" role="alert"></p><footer class="wizard-footer"><button id="setup-back" class="button secondary">Back</button><button id="setup-next" class="button">Continue →</button></footer></dialog>
+  <script src="mm-client.js"></script><script src="property-config.js"></script>
   <script type="module" src="services-preview.mjs"></script>
 </body></html>
