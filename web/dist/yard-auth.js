@@ -74,3 +74,5 @@ async resetPassword(email){return request('recover?redirect_to='+encodeURICompon
 async updatePassword(password){if(!recovery||!session)throw Error('Open a valid recovery link first');if(session.expires_at<Date.now()+30000)await refresh();await request('user',{password},'PUT',session.access_token);recovery=false;sessionStorage.removeItem('mm-recovery')},
 async signOut(){try{if(session?.access_token)await request('logout',undefined,'POST',session.access_token)}catch{}save(null);recovery=false;sessionStorage.removeItem('mm-recovery')},
 async api(body,retry=true){await ready;if(!session)throw Error('Sign in to continue');if(session.expires_at<Date.now()+30000)await refresh();const isForm=body instanceof FormData,r=await fetch(base+'/functions/v1/mowmatter-crew',{method:'POST',headers:{apikey:key,Authorization:'Bearer '+session.access_token,...(isForm?{}:{'Content-Type':'application/json'})},body:isForm?body:JSON.stringify(body),signal:AbortSignal.timeout(20000)});if(r.status===401&&retry){await refresh();return this.api(body,false)}const d=await r.json();if(!r.ok||d.error)throw Error(d.error||'Could not save');return d}}})();
+
+
