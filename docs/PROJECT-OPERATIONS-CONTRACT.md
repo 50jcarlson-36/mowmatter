@@ -37,7 +37,7 @@ Read this document before asking Joshua Carlson for connection details or making
 - Owner describes prior manual deployment via Wrangler.
 - Cloudflare's existing GitHub-integrated Workers Builds also runs successfully. This is separate from the GitHub Actions workflow added below.
 - Critical evidence: owner screenshot received 2026-10-11 12:46 ET shows Production → Domains and routes: workers.dev = mowmatter.50jcarlson.workers.dev; Custom domains = —; Routes = —.
-- Therefore this Worker has no displayed binding to mowmatter.com. Do not repeatedly diagnose a missing GitHub token as the reason the existing Cloudflare builds cannot run.
+- Superseded by the 13:33 ET screenshot: the Worker now displays route mowmatter.com/*. The earlier missing-route diagnosis is no longer current. Do not repeatedly diagnose a missing GitHub token as the reason the existing Cloudflare builds cannot run.
 - Public apex and www previously served old homepage; advantage.css returned 404 after a successful build. The actual apex origin has not yet been identified.
 - Next deployment repair: inspect existing zone DNS/Worker routes and the current apex origin, then attach the intended public domain to the correct Worker with a deliberate migration. Preserve Office, Crew, email/MX and API records. Do not blindly replace unrelated DNS.
 - Browser dashboard URL: https://dash.cloudflare.com/59ec48a67d3ebcbf997d47c9e520b0f9/workers/services/view/mowmatter/production
@@ -123,3 +123,11 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - This is NOT a verified live routing repair. A successful build did not establish public route activation. The reason remains unverified: inspect Cloudflare build root/config selection, deploy command versus version upload, active deployment and zone routes.
 - No direct Cloudflare MCP tool was available in this session. GitHub write access works. The parallel GitHub Actions deploy still fails at its deployment credential check.
 - Next dashboard action: review Worker Settings → Domains and routes and Build configuration. If connecting a Custom Domain instead of the configured route, align wrangler.toml after inspecting any existing apex DNS conflict; preserve Office/Crew/mail. Never blindly remove a conflicting record.
+
+## Updated routing evidence — 2026-10-11 13:38 ET
+- Owner screenshot confirms route mowmatter.com/* exists on mowmatter.
+- Build settings screenshot confirms main branch, root /, no build command and npx wrangler deploy. Root config is the only Wrangler config in main; no competing wrangler.jsonc was found.
+- Current main eee4d08a036a1f9a81e3321c631a1c3d7f356e05 passed Cloudflare Workers Builds; version 4907bcd3-2535-4f28-9b39-e29110e790ea.
+- Cache-busted public /index.html still serves old content. Response includes rndr-id and last-modified October 11 01:04:37 UTC, evidence traffic still reaches a Render origin. Exact reason for Worker bypass remains unverified.
+- Next targeted check: Cloudflare zone DNS for apex record proxy status (Workers routes require proxied DNS), then route conflicts/active deployment if already proxied. Do not change Office/Crew/mail.
+- Direct dashboard attempt reached Cloudflare sign-in. No authenticated Cloudflare API connector is exposed in this session. Existing Git-connected builds remain functional; that connection does not provide dashboard/DNS edit access to the agent.
