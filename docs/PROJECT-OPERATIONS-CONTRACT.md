@@ -142,3 +142,8 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - Added homepage teaser, AI Intelligence navigation, dedicated ai-intelligence.html and responsive ai-intelligence.css; mirrored root and web/dist copies. Platform page links to the new page.
 - Page explains local NWS weather, permission-based job location, original before/after photos, uncertain plant/grass/tree/shrub suggestions, owner-reviewed scheduling and treatment needs, and explicitly approved optional customer upgrades. Does not claim all capabilities are validated live or that mobile browsers track continuously in the background.
 - Owner clarified patent filing is planned, not filed. Do not publish Patent pending until filing is confirmed.
+
+## Visual AI Intelligence update — 2026-10-11
+- Added native SVG weather/location/camera/plant/calendar/approval icons, illustrative route diagram, original photo montage, and existing Crew/Office previews to the homepage and dedicated AI Intelligence page.
+- Added owner/homeowner proposal walkthrough: verify observation, configure scope/labor/pricing, present photo-backed explanation and get explicit approval. Revenue and satisfaction described as intended benefits, not measured outcomes. All diagrams and proposal/interface examples identified as illustrative.
+- Responsive layouts stack on mobile. No new provider or operational automation was enabled by this marketing update.
