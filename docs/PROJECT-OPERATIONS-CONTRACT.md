@@ -194,3 +194,12 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - Removed trial/featured-list enrollment implication from generic account CTAs: current early-access/account page has no specialized interest-list capture. Interest parameters do not constitute signup for these lists. Dedicated enrollment remains future work.
 - Clarified separate Yard Insights customer sign-in and provider record linking; no payment or scheduling functionality was tested in this messaging review.
 - Pricing pages still contain provisional availability statements; reconcile these with a verified functional launch audit before claiming live billing/automation. Audit covered copy, CTA paths and source consistency, not end-to-end payment, provider or authentication outcomes.
+
+
+## Production billing readiness verification — 2026-10-11 15:25 ET
+- Production GET https://mowmatter-property.onrender.com/api/billing/config with Office Origin returned HTTP 200: checkout_enabled=true, stripe_account_verified=true, database_verified=true, stripe_key_configured=true, webhook_configured=true, database_key_configured=true, connect_onboarding_enabled=true, homeowner_payments_enabled=true, quoting_addon_enabled=false.
+- Server plan response: Growth 4900 cents/month, fee 2.5%; Scale 12900 cents/month, fee 1.5%. Source maps Starter fee to 3.5%. Ready checks expected account acct_1UNcR11fvEozmSlD charges_enabled and billing-table access.
+- Unauthenticated billing status POST returns HTTP 401 (Sign in to Office). No real charge or subscription was created.
+- Updated stale marketing statements claiming checkout/payment collection was inactive. Individual connected operators still need active card-payment and bank-payout capabilities.
+- Stripe connector account-list request was rejected in this session; account-specific product/portal/webhook registration and delivery-history reads were not performed. API readiness proves server configuration gates, not a successful charge, subscription change or bank payout; full transaction verification remains pending.
+- README contains old statements about recurring payments; current homeowner.mjs implements authorized recurring checkout. Do not treat README as complete evidence of deployed recurring behavior without authenticated validation.
