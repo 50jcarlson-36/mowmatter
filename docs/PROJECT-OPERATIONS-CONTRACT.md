@@ -203,3 +203,13 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - Updated stale marketing statements claiming checkout/payment collection was inactive. Individual connected operators still need active card-payment and bank-payout capabilities.
 - Stripe connector account-list request was rejected in this session; account-specific product/portal/webhook registration and delivery-history reads were not performed. API readiness proves server configuration gates, not a successful charge, subscription change or bank payout; full transaction verification remains pending.
 - README contains old statements about recurring payments; current homeowner.mjs implements authorized recurring checkout. Do not treat README as complete evidence of deployed recurring behavior without authenticated validation.
+
+
+## Homeowner care-option access — 2026-10-11
+
+- Invoice account links lead to the authenticated Office customer-account portal. Its top card and invoice rows now link to care options and the existing extra-service request form.
+- Care quotes are prioritized above visit photos. “Add this service” requires explicit approval of scope, price and terms, with provider scheduling and payment confirmed separately.
+- Hedge trimming, edging/bed cleanup and seasonal-care shortcuts draft a request; the homeowner must submit it. They do not create a charge, booking or approved quote.
+- Published AI offers expose a customer consultation link in Office where a customer ID is available. Authentication and existing customer/company access checks remain required; URL identifiers are not access grants.
+- Invoice email delivery template and Supabase deployment are unchanged: its existing Manage your account link reaches these options. No new consultation email or SMS is sent automatically.
+- A live authenticated homeowner acceptance, provider response and payment remains an end-to-end verification requirement.

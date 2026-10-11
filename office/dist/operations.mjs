@@ -49,7 +49,7 @@ async function loadInsights() {
     decisions.offers
       .map(
         (o) =>
-          `<p><strong>${esc(o.title)}</strong> · ${esc(o.state)}${o.state === "accepted" ? " — Confirm capacity, schedule and payment separately." : ""}</p>`,
+          `<p><strong>${esc(o.title)}</strong> · ${esc(o.state)}${o.state === "accepted" ? " — Confirm capacity, schedule and payment separately." : ""}${o.customer_id ? ` <a href="customer-account.html?business=${encodeURIComponent(data.company.id)}&amp;customer=${encodeURIComponent(o.customer_id)}#care-options" target="_blank" rel="noopener">Customer consultation link →</a>` : ""}</p>`,
       )
       .join("") || "<p>No optional offers yet.</p>";
   const d = await api("insights");
@@ -187,7 +187,7 @@ $("offer-form").onsubmit = async (e) => {
     await loadInsights();
     $("offer-dialog").close();
     $("status").textContent =
-      "Optional quote published to the connected customer. No charge or booking created.";
+      "Optional quote published. Share the customer consultation link below so they can review the price and add the service. No charge or booking created.";
   } catch (err) {
     $("offer-status").textContent = err.message;
   } finally {
