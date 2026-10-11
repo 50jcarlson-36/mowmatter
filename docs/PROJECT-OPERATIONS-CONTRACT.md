@@ -184,3 +184,13 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - Replaced six numbered text-only cards with graphic-led benefit cards: conceptual business-value trend, neighboring route, actual $0 Starter subscription details, illustrative weather/week plan, example +$50 care offer and crew photo-record preview.
 - Shortened benefit copy, added high-contrast destination CTAs and an account-creation banner. Removed the redundant manual-workflow comparison beneath the cards.
 - No illustrative trend/route/weather graphic represents actual customer performance or telemetry. Retained fee disclosures, estimate limits, AI validation status and labeled example/photo enhancement. No new scripts or external image dependencies.
+
+
+## Marketing messaging audit — 2026-10-11
+- Reviewed all 22 top-level marketing/support/legal HTML pages and primary CTA destinations. Internal referenced HTML files exist; no missing relative page destinations found.
+- Corrected Platform's stale flat 1.5% fee to Starter 3.5%, Growth 2.5%, Scale 1.5%, plus Stripe processing.
+- Aligned homepage business-value hook with the actual revenue-snapshot output; snapshot is not a sale valuation. Added a direct account CTA to the snapshot page.
+- Business pages share AI Intelligence navigation and account CTA wording. Crew primary CTA opens the real Crew subdomain; native app roadmap remains separate.
+- Removed trial/featured-list enrollment implication from generic account CTAs: current early-access/account page has no specialized interest-list capture. Interest parameters do not constitute signup for these lists. Dedicated enrollment remains future work.
+- Clarified separate Yard Insights customer sign-in and provider record linking; no payment or scheduling functionality was tested in this messaging review.
+- Pricing pages still contain provisional availability statements; reconcile these with a verified functional launch audit before claiming live billing/automation. Audit covered copy, CTA paths and source consistency, not end-to-end payment, provider or authentication outcomes.
