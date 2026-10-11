@@ -1,4 +1,5 @@
-import { randomUUID, randomBytes } from "node:crypto";
+import { subscriptionRecovery } from "./subscription-recovery.mjs";
+import { randomUUID } from "node:crypto";
 const fail = (m, s = 400) => Object.assign(Error(m), { status: s });
 const uuid = (v) =>
   typeof v === "string" &&
@@ -19,7 +20,9 @@ export function homeownerBilling({
   connected,
   feePlan,
   feeBps,
+  savedSubscription,
 }) {
+  savedSubscription ||= subscriptionRecovery({ db, stripe });
   const rows = (cid, cu = "") =>
     db(
       "mow_homeowner_subscriptions?select=*&company_id=eq." +
@@ -163,17 +166,38 @@ export function homeownerBilling({
       if (old.status === "open" && old.url) return { url: old.url };
       if (old.status === "complete")
         throw fail("Subscription confirmation is pending", 409);
+      if (old.status !== "expired")
+        throw fail("Checkout needs reconciliation", 409);
+      await db("rpc/mow_subscription_expire", "POST", {
+        cid,
+        token: s.nonce,
+        sid: old.id,
+      });
+      s.nonce = null;
     }
-    const nonce = randomUUID();
-    const claimed = await db("rpc/mow_homeowner_checkout_claim", "POST", {
-      pid: s.plan_id,
-      cid,
-      customer: body.customer_id,
-      actor: user.id,
-      actor_email: user.email,
-      token: nonce,
-    });
-    if (!claimed) throw fail("Checkout is already being prepared", 409);
+    const nonce = s.nonce || randomUUID();
+    const claimed = s.nonce
+      ? true
+      : await db("rpc/mow_homeowner_checkout_claim", "POST", {
+          pid: s.plan_id,
+          cid,
+          customer: body.customer_id,
+          actor: user.id,
+          actor_email: user.email,
+          token: nonce,
+        });
+    if (!claimed) {
+      s = (await rows(cid, body.customer_id)).find(
+        (x) => x.plan_id === body.plan_id,
+      );
+      return savedSubscription({
+        cid,
+        nonce: s?.nonce,
+        kind: "homeowner",
+        subject: body.plan_id,
+        account: connection.account_id,
+      });
+    }
     if (!s.stripe_customer) {
       const customer = (
         await db(
@@ -221,11 +245,13 @@ export function homeownerBilling({
         "An existing subscription needs review before another can be started",
         409,
       );
-    const suffix = [...randomBytes(8)]
-      .map((n) => String.fromCharCode(97 + (n % 26)))
-      .join("");
-    const session = await stripe.checkout.sessions.create(
-      {
+    return savedSubscription({
+      cid,
+      nonce,
+      kind: "homeowner",
+      subject: s.plan_id,
+      account: connection.account_id,
+      request: {
         mode: "subscription",
         customer: s.stripe_customer,
         line_items: [
@@ -259,25 +285,11 @@ export function homeownerBilling({
               "Renews monthly until canceled. Manage cancellation in your customer account; cancellation takes effect at the end of the paid period. Additional work requires separate approval.",
           },
         },
-        integration_identifier: "mowmatter_recurring_" + suffix,
-        expires_at: Math.floor(Date.now() / 1000) + 1800,
+
         success_url: portalURL(cid, body.customer_id) + "&payment=returned",
         cancel_url: portalURL(cid, body.customer_id) + "&payment=cancelled",
       },
-      { ...opts, idempotencyKey: "mow-recurring-" + nonce },
-    );
-    await db(
-      "mow_homeowner_subscriptions?company_id=eq." +
-        cid +
-        "&plan_id=eq." +
-        s.plan_id +
-        "&nonce=eq." +
-        nonce,
-      "PATCH",
-      { checkout_session: session.id },
-      "return=minimal",
-    );
-    return { url: session.url };
+    });
   }
   async function sync(event, cid) {
     const o = event.data.object;

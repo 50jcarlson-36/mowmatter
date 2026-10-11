@@ -60,6 +60,12 @@ function harness({ state = {}, sub = {} } = {}) {
     db: async (path, method, body) => {
       if (method) {
         writes.push({ path, body });
+        if (path === "rpc/mow_subscription_prepare")
+          return {
+            request: body.request,
+            account_id: body.account,
+            created_at: new Date().toISOString(),
+          };
         return true;
       }
       return path.startsWith("mow_homeowner_subscriptions") ? [row] : [];
