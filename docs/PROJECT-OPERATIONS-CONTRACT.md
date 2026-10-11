@@ -171,3 +171,10 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - Tags include category, unconfirmed species status, code-native care/weather/calendar symbols, expandable instructions and optional service examples (+$50 hedge trimming, +$20 extra bed edging; mowing priced per approved plan).
 - Sample intervals and prices clearly labeled; no confirmed botanical identification, live diagnosis, charge or booking implied. Owner verifies care and scope; homeowner approves additional work.
 - Cards stack on narrow screens and use semantic headings/details without new JavaScript dependencies.
+
+
+## AI messaging consolidation — 2026-10-11
+- Homepage has one AI teaser/photo comparison; removed duplicate first-customer photo story. Three benefit bullets lead to inline account creation and the dedicated AI page.
+- AI page consolidated into hero, three capabilities, one real-photo/Care Tag proof, owner/homeowner guidance, one connected work flow with Office/Crew previews, compact FAQ and final signup CTA.
+- Removed repeated photo/profile/service-price sections and redundant capture/review/approve explanations. Retained sample pricing, original-photo access, species uncertainty, pending photo analysis validation and mobile-web location limits.
+- Signup CTAs link to existing early-access inline Business Login/account creation; quote and homeowner links provide secondary exploration. No fabricated urgency, live results or new automated operations implied.
