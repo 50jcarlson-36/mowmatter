@@ -156,3 +156,8 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 ## Care profile and example upsells — 2026-10-11
 - Added illustrative hedge-shrub profile with species awaiting verification, sample warm/rain weather, owner-configured 6-week review interval, labor/schedule context and +$50/visit hedge-trimming example.
 - Added owner/homeowner guidance panels and sample extra bed edging +$20/visit and small-bed mulch refresh +$85/service. All rates/scopes/intervals labeled illustrative, not platform charges or universal care guidance; nothing booked or billed by these static examples.
+
+## Consistent AI-enhanced true after — 2026-10-11
+- Owner confirmed D097DE39-8A8B-4155-9C94-9816D012A2D9.jpeg is the true after photograph; byte-identical to prior 630602BC-CD2E-49C0-8C6F-6580B600BD8A.jpeg. Keep genuine before source, no simulated lawn-service result.
+- Built-in imagegen produced a presentation enhancement from the confirmed after source. Prompt requested light/color/clarity only and unchanged viewpoint/yard/hedges/grass; generative details can differ, so enhanced images are labeled and unenhanced source remains available.
+- Published assets/customer-after-enhanced.jpg and mirrored root copy; used consistently in homepage and AI page comparisons/profiles. SVG insight flags remain separate code overlays. Unenhanced after can be viewed from both pages.
