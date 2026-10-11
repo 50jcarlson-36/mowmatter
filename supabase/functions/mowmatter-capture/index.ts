@@ -27,6 +27,13 @@ Deno.serve(async (req: Request) => {
   const measurement=b.measurement_consent===true&&b.privacy_signal!==true&&b.measurement_opt_out!==true&&req.headers.get('sec-gpc')!=='1';
   const source:Record<string,string>={};if(measurement)for(const k of ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','referrer']){const v=clean(b.source?.[k],160);if(v)source[k]=v;}
   const session=typeof b.session_id==='string'&&/^[0-9a-f-]{36}$/i.test(b.session_id)?b.session_id:crypto.randomUUID();
+  const privacySignal=b.privacy_signal===true||req.headers.get('sec-gpc')==='1';
+  if(b.kind==='sale_optout'){
+   const email=clean(b.email,255).toLowerCase();
+   if(clean(b.website,200)||email.length>254||!/^\S+@[^\s@]+\.[^\s@]+$/.test(email)||typeof b.submission_id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(b.submission_id)||b.notice_version!=='2026-10-11')return reply(400,{error:'Enter your email and retry the opt-out.'});
+   const r=await db('rpc/mowmatter_opt_out_sale',{p_id:b.submission_id,p_email:email,p_notice:b.notice_version});
+   return r.ok?reply(200,{ok:true}):reply(503,{error:'Opt-out could not be saved. Please retry.'});
+  }
   if(b.kind==='compliance_request'){
    if(clean(b.website,200)||(b.request_type!=='unsubscribe'&&(!Number.isFinite(b.elapsed_ms)||b.elapsed_ms<2000)))return reply(400,{error:'Please review your request and try again.'});
    const email=clean(b.email,255).toLowerCase(),message=clean(b.message,1501);
@@ -73,7 +80,11 @@ Deno.serve(async (req: Request) => {
    // Recheck availability on the server; a URL or client flag cannot create a lead.
    const availability=await fetch(url+'/rest/v1/mowmatter_directory_listings?'+new URLSearchParams({select:'id',status:'eq.approved',service_zips:'cs.{'+zip+'}',services:'cs.{'+services.join(',')+'}',limit:'1'}),{headers:{apikey:secret},signal:AbortSignal.timeout(8000)});
    if(!availability.ok)return reply(503,{error:'Availability could not be checked. Please try again.'});
-   const noProvider=(await availability.json()).length===0,sharing=b.lead_sharing_consent===true;
+   const noProvider=(await availability.json()).length===0;
+   if(privacySignal){const r=await db('rpc/mowmatter_opt_out_sale',{p_id:crypto.randomUUID(),p_email:email,p_notice:'2026-10-11'});if(!r.ok)return reply(503,{error:'Your privacy choice could not be saved. Please retry.'});}
+   const optout=await fetch(url+'/rest/v1/mowmatter_sale_suppressions?'+new URLSearchParams({select:'email',email:'eq.'+email,limit:'1'}),{headers:{apikey:secret},signal:AbortSignal.timeout(5000)});
+   if(!optout.ok)return reply(503,{error:'Privacy choices are temporarily unavailable.'});
+   const sharing=b.lead_sharing_consent===true&&!privacySignal&&(await optout.json()).length===0;
    let leadLocation=null;
    if(noProvider&&sharing){
     try{
