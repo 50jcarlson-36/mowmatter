@@ -152,3 +152,7 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - Owner supplied clearer after photo 630602BC-CD2E-49C0-8C6F-6580B600BD8A.jpeg; published unaltered as assets/customer-after-clear.jpg with root/web mirror. Original pixels preserved.
 - Added code-native SVG leader lines and numbered hedge/lawn/bed-edge flags over the after image, with an explicit illustrative insights badge and explanatory legend. No live AI analysis or confirmed species/diagnosis claimed.
 - Both homepage and intelligence page now show labeled before/after images; mobile stacks the comparison for readable flags. Updated the workflow to show approved care returning to routing, scheduling and management.
+
+## Care profile and example upsells — 2026-10-11
+- Added illustrative hedge-shrub profile with species awaiting verification, sample warm/rain weather, owner-configured 6-week review interval, labor/schedule context and +$50/visit hedge-trimming example.
+- Added owner/homeowner guidance panels and sample extra bed edging +$20/visit and small-bed mulch refresh +$85/service. All rates/scopes/intervals labeled illustrative, not platform charges or universal care guidance; nothing booked or billed by these static examples.
