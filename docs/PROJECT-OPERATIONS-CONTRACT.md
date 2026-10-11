@@ -178,3 +178,9 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - AI page consolidated into hero, three capabilities, one real-photo/Care Tag proof, owner/homeowner guidance, one connected work flow with Office/Crew previews, compact FAQ and final signup CTA.
 - Removed repeated photo/profile/service-price sections and redundant capture/review/approve explanations. Retained sample pricing, original-photo access, species uncertainty, pending photo analysis validation and mobile-web location limits.
 - Signup CTAs link to existing early-access inline Business Login/account creation; quote and homeowner links provide secondary exploration. No fabricated urgency, live results or new automated operations implied.
+
+
+## Graphical homepage advantage cards — 2026-10-11
+- Replaced six numbered text-only cards with graphic-led benefit cards: conceptual business-value trend, neighboring route, actual $0 Starter subscription details, illustrative weather/week plan, example +$50 care offer and crew photo-record preview.
+- Shortened benefit copy, added high-contrast destination CTAs and an account-creation banner. Removed the redundant manual-workflow comparison beneath the cards.
+- No illustrative trend/route/weather graphic represents actual customer performance or telemetry. Retained fee disclosures, estimate limits, AI validation status and labeled example/photo enhancement. No new scripts or external image dependencies.
