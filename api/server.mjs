@@ -1,3 +1,4 @@
+import {startRouteNoticeWorker} from './commerce/route-notices.mjs';
 import {startInvoiceWorker} from './commerce/invoice-worker.mjs';
 import {createSMS} from './commerce/sms.mjs';
 import {backend as commerceBackend} from './operations/access.mjs';
@@ -18,4 +19,5 @@ const permitResponse=await fetch(sb+'/functions/v1/mowmatter-crew',{method:'POST
 const call=async endpoint=>{const r=await fetch('https://api.realestateapi.com'+endpoint,{method:'POST',headers:{'x-api-key':key,'x-user-id':permit.company_id,'Content-Type':'application/json'},body:JSON.stringify({address:b.address.trim()}),signal:AbortSignal.timeout(15000)});if(!r.ok)throw Error(r.status===401||r.status===403?'Property provider rejected the key or endpoint entitlement.':r.status===429?'Property provider usage limit reached.':'Property provider could not return this address.');return r.json()};
 const detail=await call('/v2/PropertyDetail');let parcel=null,boundary_error=null;try{parcel=await call('/v1/PropertyParcel')}catch(e){boundary_error=e.message}return send(200,{ok:true,property:sanitize(detail,parcel,b.address.trim()),boundary_error,trial:permit});
 }catch(e){send(400,{error:e.name==='TimeoutError'?'Property lookup timed out.':e instanceof SyntaxError?'Invalid request.':e.message||'Property lookup unavailable.'})}})}
-if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){createServer().listen(Number(process.env.PORT)||3000,'0.0.0.0');startInvoiceWorker();}
+if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){createServer().listen(Number(process.env.PORT)||3000,'0.0.0.0');startInvoiceWorker();startRouteNoticeWorker(createSMS({backend:commerceBackend()}).sendRouteNotice);}
+

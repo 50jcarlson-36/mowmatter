@@ -122,6 +122,14 @@ export function createVonage({
           rejected: "failed",
           undeliverable: "undelivered",
         }[data.status];
+        if (status && env.MOW_ROUTE_NOTICES_ENABLED === "true")
+          await b.db(
+            "mow_route_notices?provider_id=eq.vonage:" +
+              data.message_uuid +
+              "&status=not.in.(delivered,undelivered,failed)",
+            "PATCH",
+            { status, updated_at: new Date().toISOString() },
+          );
         if (status)
           await b.db(
             "mow_quote_messages?provider_id=eq.vonage:" +

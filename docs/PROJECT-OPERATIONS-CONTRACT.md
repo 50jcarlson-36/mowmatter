@@ -213,3 +213,14 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - Published AI offers expose a customer consultation link in Office where a customer ID is available. Authentication and existing customer/company access checks remain required; URL identifiers are not access grants.
 - Invoice email delivery template and Supabase deployment are unchanged: its existing Manage your account link reaches these options. No new consultation email or SMS is sent automatically.
 - A live authenticated homeowner acceptance, provider response and payment remains an end-to-end verification requirement.
+
+
+## Published dispatch and homeowner approach notices — 2026-10-11
+
+- Implemented route publishing/order, crew/day and seven-day boards, confirmed single-visit moves with timestamp conflict and basic work-time overlap protection, published-order refresh in Crew, and authenticated customer service status/care navigation.
+- Added Vonage approaching (two stops/next), reschedule and cancellation notice worker with atomic claims, restricted invoker functions, signed callback status, separate route SMS opt-in and 8 AM–8 PM business-time-zone window. No automatic retry of uncertain sends.
+- Activation is gated by MOW_ROUTE_NOTICES_ENABLED=true on the API after migration/provider validation. Existing arrival/completion flow remains separate and unchanged.
+- Supabase read access works. apply_migration twice and execute_sql write returned Invalid or expired requestState; read-back confirmed route tables/functions are absent. Migration is committed in api/commerce/route-notices.sql, but NOT applied to production.
+- Existing Office visit list remains available when dispatch schema is unavailable. Marketing includes a graphical communication preview and states that approach/schedule-change SMS are being activated.
+- Local Postgres and DOM checks passed for ownership, publication, progress, consent/opt-outs, duplicates, stale/overlap checks, reordering, secure service links and care navigation. No carrier delivery or real customer SMS was sent.
+- See docs/customer-progress-dispatch.md for exact activation order and verification limits. Restore Supabase write access; deploy API/Office/Crew together on Render; then enable the flag and verify an opted-in test route.

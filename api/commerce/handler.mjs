@@ -1,9 +1,12 @@
 import { privatePhoto } from "../operations/photo-insights.mjs";
 import { createSMS } from "./sms.mjs";
+import { dispatchAction, customerServiceStatus } from "./dispatch.mjs";
 import { backend, fail, jsonBody, uuid } from "../operations/access.mjs";
 export function createCommerce(options = {}) {
   const b = options.backend || backend(options);
   const sms = createSMS({ ...options, backend: b });
+  const routeEnabled =
+    (options.env || process.env).MOW_ROUTE_NOTICES_ENABLED === "true";
   return async (req, res, send) => {
     const path = req.url.split("?")[0];
     if (!path.startsWith("/api/commerce/")) return false;
@@ -13,6 +16,29 @@ export function createCommerce(options = {}) {
         throw fail("Send JSON", 415);
       const input = await jsonBody(req, 12000),
         cid = input.company_id;
+      if (path.endsWith("/crew-order")) {
+        const user = await b.user(req);
+        if (!user.email_confirmed_at || !uuid(cid))
+          throw fail("Verified crew account required", 401);
+        const membership = await b.db(
+          "mow_crew_members?select=role&company_id=eq." +
+            cid +
+            "&user_id=eq." +
+            user.id,
+        );
+        if (!membership.length) throw fail("Crew access denied", 403);
+        const positions = routeEnabled
+          ? await b.db(
+              "mow_crew_jobs?select=id,route_position&company_id=eq." +
+                cid +
+                "&assigned_to=eq." +
+                user.id +
+                "&cancelled_at=is.null&limit=500",
+            )
+          : [];
+        send(200, { positions, enabled: routeEnabled });
+        return true;
+      }
       if (path.endsWith("/send-visit-sms")) {
         const user = await b.user(req);
         if (!user.email_confirmed_at)
@@ -45,6 +71,7 @@ export function createCommerce(options = {}) {
         "sms-preferences",
         "visit-photos",
         "visit-photo",
+        "service-status",
       ].includes(path.split("/").pop());
       const user = customerAction ? await b.user(req) : await b.owner(req, cid);
       if (!user.email_confirmed_at) throw fail("Use a verified account", 401);
@@ -61,6 +88,14 @@ export function createCommerce(options = {}) {
           throw fail("Customer access denied", 403);
       }
       const action = path.split("/").pop();
+      if (action === "service-status") {
+        send(200, await customerServiceStatus(b, cid, cu));
+        return true;
+      }
+      if (["dispatch-status", "dispatch-change"].includes(action)) {
+        send(200, await dispatchAction(b, user, cid, action, input));
+        return true;
+      }
       if (["visit-photos", "visit-photo"].includes(action)) {
         if (!uuid(input.job_id)) throw fail("Choose a visit");
         const jobs = await b.db(
@@ -115,15 +150,24 @@ export function createCommerce(options = {}) {
         )
           throw fail("Enter a US mobile number with +1");
         send(200, {
-          ok: await b.db("rpc/mow_sms_all_preferences", "POST", {
-            actor: user.id,
-            actor_email: user.email,
-            cid,
-            customer: cu,
-            p_phone: input.phone,
-            consent: input.consent,
-            service_consent: input.service_consent,
-          }),
+          ok: await b.db(
+            routeEnabled
+              ? "rpc/mow_route_preferences"
+              : "rpc/mow_sms_all_preferences",
+            "POST",
+            {
+              actor: user.id,
+              actor_email: user.email,
+              cid,
+              customer: cu,
+              p_phone: input.phone,
+              consent: input.consent,
+              service_consent: input.service_consent,
+              ...(routeEnabled
+                ? { route_consent: input.route_consent === true }
+                : {}),
+            },
+          ),
         });
         return true;
       }
@@ -146,7 +190,9 @@ export function createCommerce(options = {}) {
         ]);
         const channels = customerAction
           ? await b.db(
-              "mow_customer_channels?select=phone,sms_offer_consent,sms_service_consent&company_id=eq." +
+              "mow_customer_channels?select=phone,sms_offer_consent,sms_service_consent" +
+                (routeEnabled ? ",sms_route_consent" : "") +
+                "&company_id=eq." +
                 cid +
                 "&customer_id=eq." +
                 cu,
@@ -165,6 +211,7 @@ export function createCommerce(options = {}) {
           channels,
           proposals,
           sms_enabled: sms.configured(),
+          route_notices_enabled: routeEnabled,
         });
         return true;
       }

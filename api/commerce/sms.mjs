@@ -1,6 +1,7 @@
 import { createTwilioSMS } from "./twilio.mjs";
 import { createVisitSMS } from "./visit-sms.mjs";
 import { createVonage } from "./vonage.mjs";
+import { createRouteNotices } from "./route-notices.mjs";
 export function createSMS(options = {}) {
   const env = options.env || process.env;
   const provider =
@@ -19,6 +20,13 @@ export function createSMS(options = {}) {
   });
   return {
     ...base,
+    sendRouteNotice: createRouteNotices({
+      backend: options.backend,
+      transport:
+        provider === "vonage" && env.MOW_ROUTE_NOTICES_ENABLED === "true"
+          ? vonage
+          : { configured: () => false },
+    }),
     sendVisit: createVisitSMS({
       backend: options.backend,
       transport: provider === "vonage" ? vonage : { configured: () => false },
@@ -28,6 +36,10 @@ export function createSMS(options = {}) {
     status: () => ({
       provider,
       ready: supported && base.configured(),
+      route_notices_enabled:
+        env.MOW_ROUTE_NOTICES_ENABLED === "true" &&
+        provider === "vonage" &&
+        vonage.configured(),
       ...(provider === "vonage" ? { missing: vonage.missing() } : {}),
     }),
   };

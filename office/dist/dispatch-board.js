@@ -1,0 +1,249 @@
+(() => {
+  "use strict";
+  const esc = (value) =>
+    String(value ?? "").replace(
+      /[&<>"']/g,
+      (c) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[c],
+    );
+  const today = () =>
+    new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 10);
+  let timeZone =
+    Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York";
+  let day = today(),
+    mode = "day",
+    drafts = new Map();
+  async function api(action, body) {
+    return window.MowCommerce.request(action, body);
+  }
+  window.showDispatchBoard = async (data, { edit, details, reload }) => {
+    const root = document.getElementById("dispatch-board");
+    if (!root) return;
+    const scope = { company_id: data.company.id };
+    let state = { routes: [], notices: [] },
+      error = "";
+    try {
+      state = await api("dispatch-status", scope);
+    } catch (e) {
+      error = e.message;
+    }
+    if (!root.isConnected) return;
+    const legacy = document.getElementById("legacy-visits");
+    if (legacy) legacy.hidden = !error;
+    if (error) {
+      root.innerHTML = `<section class="card"><h2>Dispatch board setup pending</h2><p>Your existing visit list below remains available. The published-route database needs activation before moving cards and sending approach notices.</p></section>`;
+      return;
+    }
+    const active = data.jobs.filter(
+      (j) => !j.cancelled_at && j.status !== "completed",
+    );
+    const sort = (a, b) =>
+      (a.route_position ?? 1e9) - (b.route_position ?? 1e9) ||
+      a.scheduled_time.localeCompare(b.scheduled_time) ||
+      a.id.localeCompare(b.id);
+    function list(crew, date) {
+      const key = crew + ":" + date;
+      const jobs = active
+        .filter((j) => j.assigned_to === crew && j.service_date === date)
+        .sort(sort);
+      const order = drafts.get(key);
+      return order
+        ? jobs.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id))
+        : jobs;
+    }
+    function render() {
+      const dates = Array.from({ length: mode === "week" ? 7 : 1 }, (_, i) => {
+        const d = new Date(day + "T12:00:00Z");
+        d.setUTCDate(d.getUTCDate() + i);
+        return d.toISOString().slice(0, 10);
+      });
+      const columns =
+        mode === "day"
+          ? data.members.map((m) => ({
+              id: m.user_id,
+              date: day,
+              label: m.display_name,
+            }))
+          : dates.map((date) => ({
+              id: null,
+              date,
+              label: new Date(date + "T12:00:00Z").toLocaleDateString(
+                undefined,
+                {
+                  weekday: "short",
+                  month: "short",
+                  day: "numeric",
+                  timeZone: "UTC",
+                },
+              ),
+            }));
+      root.innerHTML = `<section class="card"><div class="section-head"><h2>Your dispatch board</h2><button class="button primary" id="dispatch-new-job">+ One-time visit</button><a class="button" href="operations.html">Weather &amp; care suggestions</a></div><div class="actions"><label>Business time zone <select id="dispatch-zone">${[...new Set([timeZone, "America/New_York", "America/Chicago", "America/Denver", "America/Phoenix", "America/Los_Angeles", "Pacific/Honolulu", "America/Anchorage"])].map((zone) => `<option value="${esc(zone)}" ${zone === timeZone ? "selected" : ""}>${esc(zone.replaceAll("_", " "))}</option>`).join("")}</select></label><label>Starting date <input id="dispatch-day" type="date" value="${esc(day)}"></label><button class="button" data-mode="day" aria-pressed="${mode === "day"}">Crews today</button><button class="button" data-mode="week" aria-pressed="${mode === "week"}">Next 7 days</button></div><p class="help">Drag pending cards between columns, or use Move. Reorder with the arrows, then publish the remaining route. Customer date/time changes queue an opted-in SMS. Moves affect this visit only.</p><p role="status" id="dispatch-status">${esc(error)}</p><div class="dispatch-columns">${columns
+        .map((c) => {
+          const jobs = c.id
+            ? list(c.id, c.date)
+            : active.filter((j) => j.service_date === c.date).sort(sort);
+          const minutes = jobs.reduce(
+              (n, j) => n + (j.planned_minutes || 30),
+              0,
+            ),
+            published =
+              c.id &&
+              state.routes.some(
+                (r) => r.crew_id === c.id && r.service_date === c.date,
+              ),
+            dirty = c.id && drafts.has(c.id + ":" + c.date);
+          return `<section class="dispatch-column" data-crew="${esc(c.id || "")}" data-day="${c.date}" aria-label="${esc(c.label)}"><h3>${esc(c.label)}</h3><p class="help">${jobs.length} stops · ${minutes} service minutes (travel excluded)${minutes > 480 ? " · Over 8 service hours" : ""}</p>${c.id ? `<span class="pill">${dirty ? "Unpublished order" : published ? "Published route" : "Needs publishing"}</span><button class="button" data-publish="${esc(c.id)}" ${!jobs.length ? "disabled" : ""}>Publish route</button>` : ""}${
+            jobs
+              .map(
+                (j, index) =>
+                  `<article class="dispatch-job" data-id="${esc(j.id)}" draggable="${["scheduled", "blocked"].includes(j.status)}"><strong>${esc(j.address)}</strong><p>${esc(j.customer_name)} · ${esc(j.scheduled_time.slice(0, 5))}</p><p>${esc(j.services.join(" · "))}</p><span class="pill">${esc(j.status.replaceAll("_", " "))}</span><div class="actions"><button class="button" data-detail="${esc(j.id)}">Details</button>${["scheduled", "blocked"].includes(j.status) ? `<button class="button" data-move="${esc(j.id)}">Move</button><button class="button" data-edit="${esc(j.id)}">Edit / Cancel</button>${c.id ? `<button class="button" data-order="${esc(j.id)}" data-delta="-1" aria-label="Move ${esc(j.address)} earlier" ${index === 0 ? "disabled" : ""}>↑</button><button class="button" data-order="${esc(j.id)}" data-delta="1" aria-label="Move ${esc(j.address)} later" ${index === jobs.length - 1 ? "disabled" : ""}>↓</button>` : ""}` : ""}</div>${state.notices
+                    .filter((n) => n.job_id === j.id)
+                    .slice(0, 2)
+                    .map(
+                      (n) =>
+                        `<small>${esc(n.kind)} notice: ${esc(n.status)}</small>`,
+                    )
+                    .join("")}</article>`,
+              )
+              .join("") || "<p>No pending visits.</p>"
+          }</section>`;
+        })
+        .join(
+          "",
+        )}</div><p class="help">Arrival notices use published stops and confirmed crew progress. They do not promise a GPS ETA. Uncertain SMS sends stay flagged for review.</p></section>`;
+      root.querySelector("#dispatch-new-job").onclick = () => edit();
+      root.querySelector("#dispatch-zone").onchange = (e) => {
+        timeZone = e.target.value;
+      };
+      root.querySelector("#dispatch-day").onchange = (e) => {
+        day = e.target.value || today();
+        render();
+      };
+      root.querySelectorAll("[data-mode]").forEach(
+        (b) =>
+          (b.onclick = () => {
+            mode = b.dataset.mode;
+            render();
+          }),
+      );
+      root
+        .querySelectorAll("[data-detail],[data-edit]")
+        .forEach(
+          (b) =>
+            (b.onclick = () =>
+              details(
+                data.jobs.find(
+                  (j) => j.id === (b.dataset.detail || b.dataset.edit),
+                ),
+              )),
+        );
+      root
+        .querySelectorAll("[data-move]")
+        .forEach(
+          (b) =>
+            (b.onclick = () =>
+              move(data.jobs.find((j) => j.id === b.dataset.move))),
+        );
+      root.querySelectorAll("[data-order]").forEach(
+        (b) =>
+          (b.onclick = () => {
+            const j = data.jobs.find((j) => j.id === b.dataset.order),
+              jobs = list(j.assigned_to, j.service_date),
+              i = jobs.findIndex((x) => x.id === j.id),
+              to = i + Number(b.dataset.delta);
+            if (to < 0 || to >= jobs.length) return;
+            if (["arrived", "in_progress"].includes(jobs[to].status)) {
+              root.querySelector("#dispatch-status").textContent =
+                "Work underway stays first.";
+              return;
+            }
+            [jobs[i], jobs[to]] = [jobs[to], jobs[i]];
+            drafts.set(
+              j.assigned_to + ":" + j.service_date,
+              jobs.map((x) => x.id),
+            );
+            window.MowDispatchDirty = true;
+            render();
+          }),
+      );
+      root.querySelectorAll("[data-publish]").forEach(
+        (b) =>
+          (b.onclick = async () => {
+            b.disabled = true;
+            try {
+              await api("dispatch-change", {
+                ...scope,
+                command: "publish",
+                time_zone: timeZone,
+                crew_id: b.dataset.publish,
+                service_date: day,
+                jobs: list(b.dataset.publish, day).map((j) => ({
+                  id: j.id,
+                  updated_at: j.updated_at,
+                })),
+              });
+              drafts.delete(b.dataset.publish + ":" + day);
+              window.MowDispatchDirty = drafts.size > 0;
+              await reload();
+            } catch (e) {
+              root.querySelector("#dispatch-status").textContent = e.message;
+              b.disabled = false;
+            }
+          }),
+      );
+      root.querySelectorAll(".dispatch-job").forEach((card) => {
+        card.ondragstart = (e) =>
+          e.dataTransfer.setData("text/plain", card.dataset.id);
+      });
+      root.querySelectorAll(".dispatch-column").forEach((col) => {
+        col.ondragover = (e) => e.preventDefault();
+        col.ondrop = (e) => {
+          e.preventDefault();
+          const j = data.jobs.find(
+            (x) => x.id === e.dataTransfer.getData("text/plain"),
+          );
+          if (j && ["scheduled", "blocked"].includes(j.status))
+            move(j, {
+              crew: col.dataset.crew || j.assigned_to,
+              date: col.dataset.day,
+            });
+        };
+      });
+    }
+    function move(j, destination = {}) {
+      const dialog = document.getElementById("dialog"),
+        content = document.getElementById("dialog-content");
+      content.innerHTML = `<h2>Move this visit</h2><p>${esc(j.address)}</p><form id="dispatch-move" class="form"><label>Crew<select name="crew_id">${data.members.map((m) => `<option value="${esc(m.user_id)}" ${m.user_id === (destination.crew || j.assigned_to) ? "selected" : ""}>${esc(m.display_name)}</option>`).join("")}</select></label><label>Date<input type="date" name="service_date" required value="${esc(destination.date || j.service_date)}"></label><label>Time<input type="time" name="scheduled_time" required value="${esc(j.scheduled_time.slice(0, 5))}"></label><p>This visit only. Your provider’s agreed arrival time should match this time. Date/time changes queue a notice for opted-in customers; reassigning a crew alone does not.</p><p>Publish the affected routes again after moving.</p><p role="status"></p><button class="button primary">Confirm move</button></form>`;
+      dialog.showModal();
+      content.querySelector("form").onsubmit = async (e) => {
+        e.preventDefault();
+        e.submitter.disabled = true;
+        try {
+          await api("dispatch-change", {
+            ...scope,
+            command: "move",
+            id: j.id,
+            expected_updated_at: j.updated_at,
+            ...Object.fromEntries(new FormData(e.target)),
+          });
+          drafts.clear();
+          window.MowDispatchDirty = false;
+          dialog.close();
+          await reload();
+        } catch (err) {
+          e.target.querySelector("[role=status]").textContent = err.message;
+          e.submitter.disabled = false;
+        }
+      };
+    }
+    render();
+  };
+})();
