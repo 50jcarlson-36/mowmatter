@@ -34,6 +34,8 @@ export function normalizeBrand(value) {
       throw Error("Use an HTTPS website");
   }
   b.auto_invoice = value.auto_invoice === true;
+  b.auto_send_invoice=value.auto_send_invoice===true;
+  b.invoice_reminders=value.invoice_reminders===true;
   return b;
 }
 export function portalURL(company, customer) {

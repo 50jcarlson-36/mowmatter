@@ -17,8 +17,8 @@ Business branding, branded invoices, Powered by MowMatter attribution and authen
 - Confirm contracting entity, actual practices, vendor/subprocessor disclosures and signed processor agreements with counsel.
 - Determine applicable state privacy laws using revenue, resident counts and referral monetization; assess data-broker registration separately.
 - Assign privacy-request ownership, verification, deadlines, appeals and records; establish retention, backup deletion and incident response procedures.
-- Review recurring subscription disclosures, renewal consent evidence, cancellation experience and applicable state automatic-renewal laws. No legal certification or revised checkout was deployed in this review.
-- Review marketing email templates and sending operations for a valid postal address, accurate sender/subject, clear opt-out and timely suppression. SMS marketing remains outside this review.
+- Review recurring subscription disclosures, renewal consent evidence, cancellation experience and applicable state automatic-renewal laws. Customer subscription authorization and cancellation controls are now implemented; provider lifecycle verification and counsel review remain pending. See COMMERCE-RELEASE.md.
+- Review marketing email templates and sending operations for a valid postal address, accurate sender/subject, clear opt-out and timely suppression. Optional quote SMS now has consent and suppression controls, but stays disabled pending sender registration and messaging review.
 - Assess accessibility, payment-security obligations and new California risk-assessment/audit/automated-decision rules only where applicable.
 
 ## Current authoritative sources reviewed

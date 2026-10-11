@@ -63,7 +63,17 @@ $("login").onsubmit = async (e) => {
     if (button.value === "signup") {
       if (!$("terms").checked)
         throw Error("Agree to the terms before creating an account.");
-      await window.MM.signUp(f.elements.email.value, f.elements.password.value, undefined, {terms_version:"2026-10-07",privacy_notice_version:"2026-10-11",account_audience:"customer",terms_accepted_at:new Date().toISOString()});
+      await window.MM.signUp(
+        f.elements.email.value,
+        f.elements.password.value,
+        undefined,
+        {
+          terms_version: "2026-10-07",
+          privacy_notice_version: "2026-10-11",
+          account_audience: "customer",
+          terms_accepted_at: new Date().toISOString(),
+        },
+      );
       $("status").textContent =
         "Check your email to confirm your account. Return here to sign in, then ask your lawn company to connect it.";
     } else {

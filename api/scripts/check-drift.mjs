@@ -3,7 +3,17 @@ import { dirname, resolve } from "node:path";
 const root = resolve(import.meta.dirname, "../..");
 // Canonical sources are copied only because each service deploys independently.
 const copies = [
-  ...["privacy-controls.js", "capture.js", "homeowner.js", "legal.js", "privacy.html", "cookies.html", "terms.html", "contact.html", "legal.css"].map(name => ["web/dist/" + name, name]),
+  ...[
+    "privacy-controls.js",
+    "capture.js",
+    "homeowner.js",
+    "legal.js",
+    "privacy.html",
+    "cookies.html",
+    "terms.html",
+    "contact.html",
+    "legal.css",
+  ].map((name) => ["web/dist/" + name, name]),
   ["api/pricing/quote-engine.mjs", "office/dist/pricing-engine.mjs"],
   ["office/dist/mm-client.js", "web/dist/yard-auth.js"],
   ["office/dist/services-preview.css", "web/dist/yard-insights.css"],

@@ -227,6 +227,11 @@ Deno.serve(async (req) => {
       );
       return out({ ok: true });
     }
+    if(b.action==='settlement'){
+      if(!uuid(b.invoice_id)||!['open','paid_external','void'].includes(b.status)||typeof b.note!=='string'||b.note.trim().length<3||b.note.length>500)throw Error('Review the invoice state and add a note');
+      const changed=await checked(db.from('mow_customer_invoices').update({settlement_status:b.status,settlement_note:b.note.trim(),settlement_by:user.id,settlement_at:new Date().toISOString()}).eq('company_id',company.id).eq('id',b.invoice_id).select('id').maybeSingle());
+      if(!changed)throw Error('Invoice unavailable');return out({ok:true});
+    }
     if (b.action === "send_invoice") {
       if (!uuid(b.invoice_id)) throw Error("Select an invoice");
       const key = Deno.env.get("RESEND_API_KEY");
@@ -246,6 +251,11 @@ Deno.serve(async (req) => {
           .eq("id", b.invoice_id)
           .single(),
       );
+      if(invoice.settlement_status&&invoice.settlement_status!=='open')throw Error('This invoice is settled or void');
+      const invoiceJob=await checked(db.from('mow_crew_jobs').select('plan_id,cancelled_at').eq('company_id',company.id).eq('id',invoice.job_id).single());
+      if(invoiceJob.cancelled_at)throw Error('Visit was canceled');
+      if(invoiceJob.plan_id){const recurring=await checked(db.from('mow_homeowner_subscriptions').select('plan_id').eq('company_id',company.id).eq('plan_id',invoiceJob.plan_id).maybeSingle());if(recurring)throw Error('This visit is billed through recurring payments');}
+      const paid=await checked(db.from('mow_payment_checkouts').select('status').eq('company_id',company.id).eq('job_id',invoice.job_id).maybeSingle());if(paid?.status==='paid')throw Error('This visit is already paid');
       if (invoice.email_status === "sent")
         return out({ ok: true, status: "sent" });
       if (

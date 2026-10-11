@@ -36,6 +36,7 @@ $('#new-job')?.addEventListener('click',()=>jobForm());
 $('#search')?.addEventListener('input',e=>{query=e.target.value;const q=query.toLowerCase();document.querySelectorAll('[data-search]').forEach(r=>r.hidden=!r.dataset.search.toLowerCase().includes(q))});
 $('#assign')?.addEventListener('click',assign);
 if(page==='home')void window.showMowLeadAlerts?.(data.company.id);
+if(page==='customers'){const commerce=document.createElement('div');$('#main').append(commerce);void window.showOwnerCommerce?.(data,commerce)}
 if(page==='financials')void window.showMowInvoices?.(data);
 if(page==='financials')window.showMowAccounting(data.company.id,document.getElementById('stripe-accounting'),data.jobs||[]);
 $('#cash-add')?.addEventListener('click',cashForm);

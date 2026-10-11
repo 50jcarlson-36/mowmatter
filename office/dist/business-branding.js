@@ -23,6 +23,7 @@
     invoice_note: "Thank you for choosing us for your lawn care.",
     invoice_terms: "",
     auto_invoice: false,
+    auto_send_invoice:false,invoice_reminders:false,
     logo_url: "",
   };
   const endpoint =
@@ -91,7 +92,7 @@
         )
         .join(
           "",
-        )}<h2>Invoice preferences</h2><label>Thank-you message<textarea name="invoice_note" maxlength="500">${esc(b.invoice_note)}</textarea></label><label>Payment terms / service notes<textarea name="invoice_terms" maxlength="1500">${esc(b.invoice_terms)}</textarea></label><label><input name="auto_invoice" type="checkbox" ${b.auto_invoice ? "checked" : ""}> Automatically create invoices when visits are completed</label><p class="help">Applies to future completed visits with a customer and a price. Existing invoices keep their issued branding. This does not charge a card or enable automatic payment.</p><p id="branding-status" role="status" aria-live="polite"></p><button class="button primary">Save branding</button></form></section><section class="card"><h2>Customer preview</h2><p class="help">Your business leads. MowMatter appears in the footer.</p><div id="brand-preview"></div></section></div><section class="card"><h2>Customer account links</h2><p>Copy a customer's unique link into your email or text. They sign in with the verified email saved on their customer record.</p><ul class="job-list">${data.customers.map((c) => `<li><div><b>${esc(c.name)}</b><small>${esc(c.email || "Add an email in Customers before sharing")}</small><input aria-label="Account link for ${esc(c.name)}" readonly value="${esc(portal(data.company.id, c.id))}"></div></li>`).join("") || "<li>Add a customer to create their account link.</li>"}</ul></section>`;
+        )}<h2>Invoice preferences</h2><label>Thank-you message<textarea name="invoice_note" maxlength="500">${esc(b.invoice_note)}</textarea></label><label>Payment terms / service notes<textarea name="invoice_terms" maxlength="1500">${esc(b.invoice_terms)}</textarea></label><label><input name="auto_invoice" type="checkbox" ${b.auto_invoice ? "checked" : ""}> Automatically create invoices when visits are completed</label><p class="help">Applies to future completed visits with a customer and a price. Existing invoices keep their issued branding. This does not charge a card or enable automatic payment.</p><label><input name="auto_send_invoice" type="checkbox" ${b.auto_send_invoice?"checked":""}> Automatically email newly generated invoices</label><label><input name="invoice_reminders" type="checkbox" ${b.invoice_reminders?"checked":""}> Send up to two outstanding-payment reminders, 7 and 14 days after the due date</label><p class="help">Invoice due date defaults to 14 days after issue. Requires customer email permission. Paid, void, externally settled, canceled and recurring-plan visits are excluded. Provider acceptance is not proof of inbox delivery.</p><p id="branding-status" role="status" aria-live="polite"></p><button class="button primary">Save branding</button></form></section><section class="card"><h2>Customer preview</h2><p class="help">Your business leads. MowMatter appears in the footer.</p><div id="brand-preview"></div></section></div><section class="card"><h2>Customer account links</h2><p>Copy a customer's unique link into your email or text. They sign in with the verified email saved on their customer record.</p><ul class="job-list">${data.customers.map((c) => `<li><div><b>${esc(c.name)}</b><small>${esc(c.email || "Add an email in Customers before sharing")}</small><input aria-label="Account link for ${esc(c.name)}" readonly value="${esc(portal(data.company.id, c.id))}"></div></li>`).join("") || "<li>Add a customer to create their account link.</li>"}</ul></section>`;
       const form = document.getElementById("branding-form");
       const values = () => {
         const f = new FormData(form);
@@ -99,6 +100,7 @@
           ...b,
           ...Object.fromEntries(f),
           auto_invoice: f.get("auto_invoice") === "on",
+          auto_send_invoice:f.has("auto_send_invoice"),invoice_reminders:f.has("invoice_reminders"),
         };
       };
       const paint = () =>
@@ -199,7 +201,7 @@
         )
         .join(
           "",
-        )}</select></label><button class="button">Generate invoice</button><p role="status"></p></form><ul class="job-list">${d.invoices.map((i) => `<li><div><b>MM-${i.number} · ${esc(i.snapshot.customer)}</b><small>${esc(i.created_at.slice(0, 10))} · $${(i.amount_cents / 100).toFixed(2)}</small></div><button class="button" data-invoice="${i.id}">View invoice</button><button class="button" data-send-invoice="${i.id}" ${i.email_status === "sent" || i.email_status === "sending" ? "disabled" : ""}>${i.email_status === "sent" ? "Email accepted" : "Send invoice email"}</button></li>`).join("") || "<li>No customer invoices yet.</li>"}</ul>`;
+        )}</select></label><button class="button">Generate invoice</button><p role="status"></p></form><ul class="job-list">${d.invoices.map((i) => `<li><div><b>MM-${i.number} · ${esc(i.snapshot.customer)}</b><small>${esc(i.created_at.slice(0, 10))} · $${(i.amount_cents / 100).toFixed(2)}</small><small>${esc(i.settlement_status||"open")} · Due ${esc(i.due_at?.slice(0,10)||"Not specified")}</small></div><button class="button" data-settlement="${i.id}">Record settlement / void</button><button class="button" data-invoice="${i.id}">View invoice</button><button class="button" data-send-invoice="${i.id}" ${i.email_status === "sent" || i.email_status === "sending" ? "disabled" : ""}>${i.email_status === "sent" ? "Email accepted" : "Send invoice email"}</button></li>`).join("") || "<li>No customer invoices yet.</li>"}</ul>`;
       target
         .querySelectorAll("[data-invoice]")
         .forEach(
@@ -207,6 +209,9 @@
             (el.onclick = () =>
               showInvoice(d.invoices.find((i) => i.id === el.dataset.invoice))),
         );
+      target.querySelectorAll('[data-settlement]').forEach(button=>button.onclick=()=>{
+        const invoice=d.invoices.find(i=>i.id===button.dataset.settlement);const dialog=document.getElementById('dialog');document.getElementById('dialog-content').innerHTML=`<h2>Invoice MM-${invoice.number}</h2><form id="invoice-settlement" class="form"><label>Record state<select name="status"><option value="paid_external">Paid outside MowMatter</option><option value="void">Void invoice</option><option value="open">Reopen invoice</option></select></label><label>Reason / payment reference<input name="note" required minlength="3" maxlength="500"></label><p>This changes the invoice record and reminder eligibility. It does not charge, refund or cancel a Stripe payment.</p><button class="button primary">Save record</button><p role="status"></p></form>`;dialog.showModal();document.getElementById('invoice-settlement').onsubmit=async e=>{e.preventDefault();e.submitter.disabled=true;try{await request({action:'settlement',company_id:data.company.id,invoice_id:invoice.id,...Object.fromEntries(new FormData(e.target))});dialog.close();await window.showMowInvoices(data)}catch(err){e.target.querySelector('[role=status]').textContent=err.message;e.submitter.disabled=false}};
+      });
       target.querySelectorAll("[data-send-invoice]").forEach(
         (el) =>
           (el.onclick = async () => {

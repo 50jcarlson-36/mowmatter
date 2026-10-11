@@ -31,11 +31,47 @@ export function createOperations(options = {}) {
             (input.confirm_quote !== true && input.choice === "accepted")
           )
             throw fail("Review and confirm the quote first");
-          const result = await b.db("rpc/mow_yard_respond", "POST", {
-            actor: user.id,
-            offer: input.offer_id,
-            choice: input.choice,
-          });
+          const linked = await b.db(
+            "mow_customer_quotes?select=id,company_id,customer_id,amount_cents&source_offer_id=eq." +
+              input.offer_id,
+          );
+          let result;
+          if (linked[0]) {
+            if (!user.email_confirmed_at)
+              throw fail("Verified account required", 401);
+            const q = linked[0];
+            const customers = await b.db(
+              "mow_customers?select=email&company_id=eq." +
+                q.company_id +
+                "&id=eq." +
+                q.customer_id,
+            );
+            if (
+              !customers[0]?.email ||
+              customers[0].email.toLowerCase() !== user.email?.toLowerCase()
+            )
+              throw fail("Customer access denied", 403);
+            result = await b.db("rpc/mow_commerce_action", "POST", {
+              actor: user.id,
+              actor_email: user.email,
+              cid: q.company_id,
+              customer: q.customer_id,
+              command: "respond",
+              payload: {
+                id: q.id,
+                choice: input.choice,
+                confirm_quote: input.confirm_quote,
+                expected_amount_cents: q.amount_cents,
+                notice_version: "2026-10-11",
+              },
+            });
+          } else {
+            result = await b.db("rpc/mow_yard_respond", "POST", {
+              actor: user.id,
+              offer: input.offer_id,
+              choice: input.choice,
+            });
+          }
           send(200, result);
           return true;
         }
