@@ -161,3 +161,6 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - Owner confirmed D097DE39-8A8B-4155-9C94-9816D012A2D9.jpeg is the true after photograph; byte-identical to prior 630602BC-CD2E-49C0-8C6F-6580B600BD8A.jpeg. Keep genuine before source, no simulated lawn-service result.
 - Built-in imagegen produced a presentation enhancement from the confirmed after source. Prompt requested light/color/clarity only and unchanged viewpoint/yard/hedges/grass; generative details can differ, so enhanced images are labeled and unenhanced source remains available.
 - Published assets/customer-after-enhanced.jpg and mirrored root copy; used consistently in homepage and AI page comparisons/profiles. SVG insight flags remain separate code overlays. Unenhanced after can be viewed from both pages.
+
+## Connected intelligence graphic — 2026-10-11
+- Replaced plain hero context list with branded hub graphic: Mow Matter mark, matching weather/location/photo/calendar SVGs, connecting lines, compact context tiles and route/schedule/customer-history output strip. Responsive two-column tiles retain readable text on mobile. No live telemetry or automation status implied.
