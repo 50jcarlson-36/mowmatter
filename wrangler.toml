@@ -2,6 +2,12 @@
 name = "mowmatter"
 compatibility_date = "2026-10-11"
 
+# Serve the public apex through this Worker using its existing proxied DNS.
+# Do not use *.mowmatter.com: Office and Crew are separate Render services.
+routes = [
+  { pattern = "mowmatter.com/*", zone_name = "mowmatter.com" }
+]
+
 [assets]
 directory = "./web/dist"
 html_handling = "none"
