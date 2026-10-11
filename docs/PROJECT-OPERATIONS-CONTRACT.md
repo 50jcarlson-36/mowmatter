@@ -46,7 +46,7 @@ Read this document before asking Joshua Carlson for connection details or making
 ## Deployment paths — do not confuse them
 1. Existing Cloudflare Workers Builds: observed successful. Uses its existing Cloudflare-side credentials.
 2. GitHub Actions: .github/workflows/deploy.yml added on main at abb8a2e7a978a5c6f1c3fbcf5c32caf7a5ec4145. On push to main or manual workflow_dispatch; cloudflare/wrangler-action@v3; Wrangler 4; command deploy --config wrangler.toml.
-3. wrangler.toml: name mowmatter; assets.directory ./web/dist; html_handling none; compatibility_date 2026-10-11. No custom domains declared.
+3. wrangler.toml: name mowmatter; assets.directory ./web/dist; html_handling none; compatibility_date 2026-10-11. Exact apex Worker route added subsequently; see routing repair evidence below.
 4. New Actions workflow expects repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID. Account value must be the ID above.
 5. Verified run https://github.com/50jcarlson-36/mowmatter/actions/runs/38150632301 failed at Check deployment secrets: Missing repository secret CLOUDFLARE_API_TOKEN. Account secret was not independently verified because the first check exited.
 6. Missing Actions secrets do not invalidate the existing Cloudflare deployment connection. GitHub connector cannot read/create repository secrets; do not claim otherwise.
@@ -115,3 +115,11 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - Check current main, preserve unrelated changes and use expected-SHA ref updates.
 - Record deployed commit, test result, actual public URL and remaining blockers after each release.
 - Keep this contract current; it is a durable reference, not a guarantee of perpetual authentication or automatic availability in every unrelated chat.
+
+## Routing repair evidence — 2026-10-11
+- Commit 0373657625eb46aeea6a01626c468cdfc78fb827 added only the exact route mowmatter.com/* with zone_name mowmatter.com to root wrangler.toml. No DNS records were changed.
+- Cloudflare Workers Build 20df687a-bab1-4639-a502-63cf21c60c80 completed successfully; reported Worker version 748c47bc-9132-4ea4-a60c-d9a864b0d84a. Quality CI passed.
+- After the successful build, a cache-busted apex request still returned the old 5,202-byte homepage; cache-busted advantage.css returned 404. Office and Crew returned 200.
+- This is NOT a verified live routing repair. A successful build did not establish public route activation. The reason remains unverified: inspect Cloudflare build root/config selection, deploy command versus version upload, active deployment and zone routes.
+- No direct Cloudflare MCP tool was available in this session. GitHub write access works. The parallel GitHub Actions deploy still fails at its deployment credential check.
+- Next dashboard action: review Worker Settings → Domains and routes and Build configuration. If connecting a Custom Domain instead of the configured route, align wrangler.toml after inspecting any existing apex DNS conflict; preserve Office/Crew/mail. Never blindly remove a conflicting record.
