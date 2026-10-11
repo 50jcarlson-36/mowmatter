@@ -27,7 +27,7 @@
     }
     if (!MM.session || MM.recovery) {
       const recovery = MM.recovery;
-      main.innerHTML = `<section class="card"><h2>${recovery ? "Reset your password" : "Welcome back."}</h2><p>Use the email address your lawn care company has on file.</p><form id="account-auth" class="form">${recovery ? "" : '<label>Email<input name="email" type="email" required autocomplete="username"></label>'}<label>Password<input name="password" type="password" required minlength="8" autocomplete="${recovery ? "new-password" : "current-password"}"></label><div class="actions"><button class="button primary" value="login">${recovery ? "Save password" : "Sign in"}</button>${recovery ? "" : '<button class="button" value="signup">Create account</button><button type="button" id="reset-password" class="button">Forgot password?</button>'}</div><p role="status" aria-live="polite"></p></form></section>`;
+      main.innerHTML = `<section class="card"><h2>${recovery ? "Reset your password" : "Welcome back."}</h2><p>Use the email address your lawn care company has on file.</p><form id="account-auth" class="form">${recovery ? "" : '<label>Email<input name="email" type="email" required autocomplete="username"></label>'}<label>Password<input name="password" type="password" required minlength="8" autocomplete="${recovery ? "new-password" : "current-password"}"></label>${recovery ? "" : MowNotice.markup("customer")}<div class="actions"><button class="button primary" value="login">${recovery ? "Save password" : "Sign in"}</button>${recovery ? "" : '<button class="button" value="signup">Create account</button><button type="button" id="reset-password" class="button">Forgot password?</button>'}</div><p role="status" aria-live="polite"></p></form></section>`;
       const form = document.getElementById("account-auth");
       form.onsubmit = async (e) => {
         e.preventDefault();
@@ -38,7 +38,7 @@
             await MM.updatePassword(f.get("password"));
             await load();
           } else if (e.submitter.value === "signup") {
-            await MM.signUp(f.get("email"), f.get("password"));
+            await MM.signUp(f.get("email"), f.get("password"), undefined, MowNotice.validate(form, "customer"));
             form.querySelector('[role="status"]').textContent =
               "Check your email to confirm your account, then reopen your customer link.";
           } else {

@@ -23,6 +23,7 @@ const ready=(async()=>{
   rememberPreference(flow.launchUpdates);
   const d=await request('token?grant_type=pkce',{auth_code:code,code_verifier:flow.verifier});
   save({...d,expires_at:Date.now()+d.expires_in*1000});
+  if(flow.acceptance){const user=await request('user',{data:flow.acceptance},'PUT',session.access_token);save({...session,user});}
   sessionStorage.removeItem('mm-recovery');localStorage.setItem('mm-crew-mode','live');
  }else if(h.has('access_token')){
   const token=h.get('access_token'),rt=h.get('refresh_token'),type=h.get('type');
@@ -39,7 +40,7 @@ const ready=(async()=>{
  }
  recovery=recovery||sessionStorage.getItem('mm-recovery')==='1';
 })().catch(err=>{save(null);recovery=false;authError=err.message||'Could not finish signing in. Please try again.'});
-async function socialSignIn(provider,launchUpdates){
+async function socialSignIn(provider,launchUpdates,acceptance){
  if(!['google','facebook'].includes(provider))throw Error('Unsupported sign-in provider');
  const label=provider==='google'?'Google':'Facebook';
  await ready;rememberPreference(launchUpdates);
@@ -48,7 +49,7 @@ async function socialSignIn(provider,launchUpdates){
  if(!crypto.subtle)throw Error('Open the secure Mow Matter website to use social sign-in.');
  const verifier=base64url(crypto.getRandomValues(new Uint8Array(32)));
  const challenge=base64url(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier))));
- sessionStorage.setItem(oauthKey,JSON.stringify({verifier,provider,started:Date.now(),launchUpdates:pendingPreference()}));
+ sessionStorage.setItem(oauthKey,JSON.stringify({verifier,provider,started:Date.now(),launchUpdates:pendingPreference(),acceptance}));
  const target=new URL(base+'/auth/v1/authorize');
  target.search=new URLSearchParams({provider,redirect_to:location.origin+location.pathname,code_challenge:challenge,code_challenge_method:'s256',...(provider==='google'?{prompt:'select_account'}:{scopes:'email'})}).toString();
  location.assign(target.href);
@@ -61,14 +62,14 @@ function mountGoogleLogin(form){
  const divider=document.createElement('p');divider.className='help';divider.style.textAlign='center';divider.textContent='or use your email';
  const facebook=document.createElement('button');facebook.type='button';facebook.className=button.className;facebook.dataset.facebookLogin='';facebook.style.cssText=button.style.cssText;facebook.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="#1877F2"/><path fill="white" d="M13.5 21v-8h2.7l.4-3h-3.1V8.2c0-.9.3-1.5 1.6-1.5h1.7V4.1c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3V10H7.4v3h2.7v8z"/></svg><span>Continue with Facebook</span>';form.before(button,facebook,divider);
  const status=form.querySelector('[role="status"]');if(status){status.setAttribute('aria-live','polite');status.textContent=authError;}
- button.onclick=async()=>{button.disabled=true;button.setAttribute('aria-busy','true');try{await socialSignIn('google',form.querySelector('[name=launch_updates]')?.checked)}catch(err){if(status)status.textContent=err.message;button.disabled=false;button.removeAttribute('aria-busy')}};
- facebook.onclick=async()=>{facebook.disabled=true;facebook.setAttribute('aria-busy','true');try{await socialSignIn('facebook',form.querySelector('[name=launch_updates]')?.checked)}catch(err){if(status)status.textContent=err.message;facebook.disabled=false;facebook.removeAttribute('aria-busy')}};
+ button.onclick=async()=>{button.disabled=true;button.setAttribute('aria-busy','true');try{const acceptance=form.elements.account_terms?MowNotice.validate(form,'business'):undefined;await socialSignIn('google',form.querySelector('[name=launch_updates]')?.checked,acceptance)}catch(err){if(status)status.textContent=err.message;button.disabled=false;button.removeAttribute('aria-busy')}};
+ facebook.onclick=async()=>{facebook.disabled=true;facebook.setAttribute('aria-busy','true');try{const acceptance=form.elements.account_terms?MowNotice.validate(form,'business'):undefined;await socialSignIn('facebook',form.querySelector('[name=launch_updates]')?.checked,acceptance)}catch(err){if(status)status.textContent=err.message;facebook.disabled=false;facebook.removeAttribute('aria-busy')}};
  if(oauthRequested){const provider=oauthRequested;oauthRequested=null;void (provider==='facebook'?facebook:button).onclick();}
 }
 
 window.MM={ready,saveLaunchUpdates,get launchUpdatesChoice(){return pendingPreference()},socialSignIn,googleSignIn:()=>socialSignIn('google'),facebookSignIn:()=>socialSignIn('facebook'),mountGoogleLogin,get authError(){return authError},async ensureSession(){await ready;if(!session)throw Error('Sign in to continue');if(session.expires_at<Date.now()+30000)await refresh();return session},get session(){return session},get recovery(){return recovery},
 async signIn(email,password){const d=await request('token?grant_type=password',{email,password});save({...d,expires_at:Date.now()+d.expires_in*1000});recovery=false;sessionStorage.removeItem('mm-recovery');return d},
-async signUp(email,password,launchUpdates){rememberPreference(launchUpdates);return request('signup?redirect_to='+encodeURIComponent(typeof launchUpdates==='boolean'?location.origin+'/login.html':redirect()),{email,password,...(typeof launchUpdates==='boolean'?{data:{launch_updates:launchUpdates}}:{})})},
+async signUp(email,password,launchUpdates,acceptance){rememberPreference(launchUpdates);return request('signup?redirect_to='+encodeURIComponent(typeof launchUpdates==='boolean'?location.origin+'/login.html':redirect()),{email,password,data:{...(typeof launchUpdates==='boolean'?{launch_updates:launchUpdates}:{}),...(acceptance||{})}})},
 async resend(email){return request('resend',{type:'signup',email,options:{email_redirect_to:redirect()}})},
 async resetPassword(email){return request('recover?redirect_to='+encodeURIComponent(redirect()),{email})},
 async updatePassword(password){if(!recovery||!session)throw Error('Open a valid recovery link first');if(session.expires_at<Date.now()+30000)await refresh();await request('user',{password},'PUT',session.access_token);recovery=false;sessionStorage.removeItem('mm-recovery')},
