@@ -147,3 +147,8 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - Added native SVG weather/location/camera/plant/calendar/approval icons, illustrative route diagram, original photo montage, and existing Crew/Office previews to the homepage and dedicated AI Intelligence page.
 - Added owner/homeowner proposal walkthrough: verify observation, configure scope/labor/pricing, present photo-backed explanation and get explicit approval. Revenue and satisfaction described as intended benefits, not measured outcomes. All diagrams and proposal/interface examples identified as illustrative.
 - Responsive layouts stack on mobile. No new provider or operational automation was enabled by this marketing update.
+
+## Annotated before/after presentation — 2026-10-11
+- Owner supplied clearer after photo 630602BC-CD2E-49C0-8C6F-6580B600BD8A.jpeg; published unaltered as assets/customer-after-clear.jpg with root/web mirror. Original pixels preserved.
+- Added code-native SVG leader lines and numbered hedge/lawn/bed-edge flags over the after image, with an explicit illustrative insights badge and explanatory legend. No live AI analysis or confirmed species/diagnosis claimed.
+- Both homepage and intelligence page now show labeled before/after images; mobile stacks the comparison for readable flags. Updated the workflow to show approved care returning to routing, scheduling and management.
