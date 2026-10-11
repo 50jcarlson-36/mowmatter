@@ -136,3 +136,9 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - Owner screenshot confirms apex CNAME @ -> mowmatter.onrender.com is Proxied. Office/Crew remain DNS only.
 - Public advantage.css and original before/after assets now return 200 with expected lengths (2771, 344497, 270802). /index.html serves updated 11165-byte homepage. DNS proxy activation resolved Worker bypass.
 - Public / returns 404 because html_handling none disables directory index resolution. Changed root wrangler.toml to auto-trailing-slash to serve index.html at /. Existing .html links redirect to canonical extensionless paths; query strings remain handled by Cloudflare. Verify public root after successful build before calling it complete.
+
+## Public AI Intelligence release — 2026-10-11
+- Homepage root repair 451deaa6e1f7fbec58f4f16a5eb1c8bbe4e0bcde passed quality and Workers Builds, version c4a7c5b8-a2ea-444f-8346-68265e5e109e. Public root returned 200 with new advantage content; stylesheet and original yard photographs returned 200.
+- Added homepage teaser, AI Intelligence navigation, dedicated ai-intelligence.html and responsive ai-intelligence.css; mirrored root and web/dist copies. Platform page links to the new page.
+- Page explains local NWS weather, permission-based job location, original before/after photos, uncertain plant/grass/tree/shrub suggestions, owner-reviewed scheduling and treatment needs, and explicitly approved optional customer upgrades. Does not claim all capabilities are validated live or that mobile browsers track continuously in the background.
+- Owner clarified patent filing is planned, not filed. Do not publish Patent pending until filing is confirmed.
