@@ -1,4 +1,5 @@
 import { createTwilioSMS } from "./twilio.mjs";
+import { createVisitSMS } from "./visit-sms.mjs";
 import { createVonage } from "./vonage.mjs";
 export function createSMS(options = {}) {
   const env = options.env || process.env;
@@ -18,6 +19,10 @@ export function createSMS(options = {}) {
   });
   return {
     ...base,
+    sendVisit: createVisitSMS({
+      backend: options.backend,
+      transport: provider === "vonage" ? vonage : { configured: () => false },
+    }),
     webhook: async (req, res) =>
       (await vonage.webhook(req, res)) || (await base.webhook(req, res)),
     status: () => ({

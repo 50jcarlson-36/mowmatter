@@ -1,3 +1,4 @@
+import { privatePhoto } from "../operations/photo-insights.mjs";
 import { createSMS } from "./sms.mjs";
 import { backend, fail, jsonBody, uuid } from "../operations/access.mjs";
 export function createCommerce(options = {}) {
@@ -12,6 +13,13 @@ export function createCommerce(options = {}) {
         throw fail("Send JSON", 415);
       const input = await jsonBody(req, 12000),
         cid = input.company_id;
+      if (path.endsWith("/send-visit-sms")) {
+        const user = await b.user(req);
+        if (!user.email_confirmed_at)
+          throw fail("Verified account required", 401);
+        send(200, await sms.sendVisit({ user, eventId: input.event_id }));
+        return true;
+      }
       if (path.endsWith("/propose-visit")) {
         const user = await b.user(req);
         if (!user.email_confirmed_at)
@@ -35,6 +43,8 @@ export function createCommerce(options = {}) {
         "request",
         "respond",
         "sms-preferences",
+        "visit-photos",
+        "visit-photo",
       ].includes(path.split("/").pop());
       const user = customerAction ? await b.user(req) : await b.owner(req, cid);
       if (!user.email_confirmed_at) throw fail("Use a verified account", 401);
@@ -51,6 +61,48 @@ export function createCommerce(options = {}) {
           throw fail("Customer access denied", 403);
       }
       const action = path.split("/").pop();
+      if (["visit-photos", "visit-photo"].includes(action)) {
+        if (!uuid(input.job_id)) throw fail("Choose a visit");
+        const jobs = await b.db(
+          "mow_crew_jobs?select=id&company_id=eq." +
+            cid +
+            "&customer_id=eq." +
+            cu +
+            "&id=eq." +
+            input.job_id,
+        );
+        if (!jobs.length) throw fail("Visit unavailable", 404);
+        const photos = await b.db(
+          "mow_crew_photos?select=id,storage_path,created_at&company_id=eq." +
+            cid +
+            "&job_id=eq." +
+            input.job_id +
+            "&limit=100",
+        );
+        if (action === "visit-photos") {
+          send(200, {
+            photos: photos.map(({ id, created_at }) => ({ id, created_at })),
+          });
+          return true;
+        }
+        if (!uuid(input.photo_id)) throw fail("Choose a photo");
+        const photo = photos.find((p) => p.id === input.photo_id);
+        if (
+          !photo ||
+          !photo.storage_path.startsWith(cid + "/" + input.job_id + "/")
+        )
+          throw fail("Photo unavailable", 404);
+        const bytes = await privatePhoto(b, photo.storage_path);
+        res.writeHead(200, {
+          "Content-Type": "image/jpeg",
+          "Cache-Control": "no-store",
+          "X-Content-Type-Options": "nosniff",
+          "Access-Control-Allow-Origin": req.headers.origin,
+          Vary: "Origin",
+        });
+        res.end(bytes);
+        return true;
+      }
       if (action === "send-quote-sms") {
         send(200, await sms.sendQuote({ cid, user, quoteId: input.id }));
         return true;
@@ -58,17 +110,19 @@ export function createCommerce(options = {}) {
       if (action === "sms-preferences") {
         if (
           !/^\+1[2-9][0-9]{9}$/.test(input.phone || "") ||
-          typeof input.consent !== "boolean"
+          typeof input.consent !== "boolean" ||
+          typeof input.service_consent !== "boolean"
         )
           throw fail("Enter a US mobile number with +1");
         send(200, {
-          ok: await b.db("rpc/mow_sms_preferences", "POST", {
+          ok: await b.db("rpc/mow_sms_all_preferences", "POST", {
             actor: user.id,
             actor_email: user.email,
             cid,
             customer: cu,
             p_phone: input.phone,
             consent: input.consent,
+            service_consent: input.service_consent,
           }),
         });
         return true;
@@ -92,7 +146,7 @@ export function createCommerce(options = {}) {
         ]);
         const channels = customerAction
           ? await b.db(
-              "mow_customer_channels?select=phone,sms_offer_consent&company_id=eq." +
+              "mow_customer_channels?select=phone,sms_offer_consent,sms_service_consent&company_id=eq." +
                 cid +
                 "&customer_id=eq." +
                 cu,

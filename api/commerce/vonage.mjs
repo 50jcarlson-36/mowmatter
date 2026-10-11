@@ -130,6 +130,14 @@ export function createVonage({
             "PATCH",
             { status, updated_at: new Date().toISOString() },
           );
+        if (status)
+          await b.db(
+            "mow_visit_sms_messages?provider_id=eq.vonage:" +
+              data.message_uuid +
+              "&status=not.in.(delivered,undelivered,failed)",
+            "PATCH",
+            { status, updated_at: new Date().toISOString() },
+          );
       } else {
         if (
           !phone(data.from) ||

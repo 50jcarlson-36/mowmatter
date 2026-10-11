@@ -27,3 +27,16 @@ Invoice delivery uses the existing Supabase Resend configuration and a five-minu
 119 API tests and the Office suite passed. Rollback-only database checks passed for wrong-customer denial, changed amount rejection, idempotent booking, owner-reviewed reschedule requests, STOP suppression, unchanged authorized monthly pricing and separate/idempotent recurring add-ons. No real payments, SMS or customer emails were sent during verification. Native-phone field use and real provider lifecycle tests remain pending.
 
 See FEATURE-STATUS.md for the wider competitive backlog and US-COMPLIANCE-REVIEW.md for remaining legal/operational review.
+
+## Monday visit messaging and private photos
+
+- Vonage only for arrival/completion status delivery. Crew confirms location prompt or manual check-in/start; departing prompts completion review. GPS never sends automatically.
+- Crew transition calls the authenticated API after the event is saved. Arrival is deduplicated across check-in/start; completion once per visit. Events older than 15 minutes are not replayed.
+- Separate unchecked customer opt-ins: status texts and optional additional-service offers. STOP suppresses both across businesses for that phone. Signup/email notification consent is not reused as SMS consent.
+- Customers sign in with their matching verified email to view visit photos. API checks business, customer, visit and private storage path for each image; storage stays private.
+- Upgrade offer text links to explicit approval of scope/price/terms. SMS replies alone cannot approve or charge.
+- API service must be always on for prompt notifications. A sleeping free Render service can exceed the transition's 20-second SMS call timeout. Visits remain saved; uncertain sends need owner review rather than automatic retransmission. Failed delivery/status SMS retry UI is not implemented.
+- Activation requires MOW_SMS_PROVIDER=vonage plus VONAGE_API_KEY, VONAGE_APPLICATION_ID, VONAGE_PRIVATE_KEY, VONAGE_SIGNATURE_SECRET and approved US VONAGE_SMS_FROM. MOW_SMS_ENABLED, VONAGE_REGISTRATION_APPROVED and VONAGE_WEBHOOKS_VERIFIED stay false until registration, signed webhook, STOP/HELP and controlled real-device testing are complete.
+- Vonage application inbound URL: https://mowmatter-property.onrender.com/api/commerce/sms/vonage/inbound
+- Vonage application status URL: https://mowmatter-property.onrender.com/api/commerce/sms/vonage/status
+- No real SMS was sent during automated verification. Owner reviews a crew suggestion, sets price and sends the approval link; sending offers is not automatic.

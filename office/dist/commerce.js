@@ -75,16 +75,67 @@
         )
         .join(
           "",
-        )}</select></label><label>Preferred date (optional)<input name="preferred_date" type="date" min="${date()}"></label><label>Details<textarea name="message" required minlength="3" maxlength="1500"></textarea></label><p class="help">Do not include passwords, card details or access codes.</p><button class="button primary">Send request</button><p role="status"></p></form></section><section class="card"><h2>Your requests</h2>${d.requests.map((r) => `<article><h3>${esc(r.kind)} · ${esc(r.state)}</h3><p>${esc(r.message)}</p>${r.owner_response ? `<p>Provider response: ${esc(r.owner_response)}</p>` : ""}</article>`).join("") || "<p>No requests yet.</p>"}</section><section class="card"><h2>Optional SMS offers</h2><form id="sms-preferences" class="form"><label>My US mobile number<input name="phone" type="tel" required pattern="\\+1[2-9][0-9]{9}" placeholder="+13865551234" value="${esc(d.channels[0]?.phone || "")}"></label><label class="check"><input name="consent" type="checkbox" ${d.channels[0]?.sms_offer_consent ? "checked" : ""}>I own this number and agree to receive automated optional service offers from this provider through MowMatter. Up to 3 offer texts per day. Message and data rates may apply. Reply STOP to opt out or HELP for help. Consent is not required to purchase service.</label><p><a href="https://mowmatter.com/terms.html">Terms</a> · <a href="https://mowmatter.com/privacy.html">Privacy</a></p><button class="button">Save SMS preference</button><p role="status"></p>${d.sms_enabled ? "" : "<p>SMS sending is awaiting activation. Your preference does not approve any additional work.</p>"}</form></section><section><h2>Your quotes</h2>${d.quotes.map((q) => quoteCard(q, true)).join("") || "<p>No quotes yet.</p>"}</section>`;
+        )}</select></label><label>Preferred date (optional)<input name="preferred_date" type="date" min="${date()}"></label><label>Details<textarea name="message" required minlength="3" maxlength="1500"></textarea></label><p class="help">Do not include passwords, card details or access codes.</p><button class="button primary">Send request</button><p role="status"></p></form></section><section class="card"><h2>Your requests</h2>${d.requests.map((r) => `<article><h3>${esc(r.kind)} · ${esc(r.state)}</h3><p>${esc(r.message)}</p>${r.owner_response ? `<p>Provider response: ${esc(r.owner_response)}</p>` : ""}</article>`).join("") || "<p>No requests yet.</p>"}</section><section class="card"><h2>Text updates and optional offers</h2><form id="sms-preferences" class="form"><label>My US mobile number<input name="phone" type="tel" required pattern="\\+1[2-9][0-9]{9}" placeholder="+13865551234" value="${esc(d.channels[0]?.phone || "")}"></label><label class="check"><input name="service_consent" type="checkbox" ${d.channels[0]?.sms_service_consent ? "checked" : ""}>I own this number and agree to automated arrival and completion texts from this provider through MowMatter. Up to 2 status texts per visit. Message and data rates may apply. Reply STOP to opt out or HELP for help.</label><label class="check"><input name="consent" type="checkbox" ${d.channels[0]?.sms_offer_consent ? "checked" : ""}>I own this number and agree to receive automated optional service offers from this provider through MowMatter. Up to 3 offer texts per day. Message and data rates may apply. Reply STOP to opt out or HELP for help. Consent is not required to purchase service.</label><p><a href="https://mowmatter.com/terms.html">Terms</a> · <a href="https://mowmatter.com/privacy.html">Privacy</a></p><button class="button">Save SMS preference</button><p role="status"></p>${d.sms_enabled ? "" : "<p>SMS sending is awaiting activation. Your preference does not approve any additional work.</p>"}</form></section><section><h2>Your quotes</h2>${d.quotes.map((q) => quoteCard(q, true)).join("") || "<p>No quotes yet.</p>"}</section>`;
       bind(target.querySelector("#sms-preferences"), async (f) => {
         await request("sms-preferences", {
           ...scope,
           phone: f.get("phone"),
           consent: f.has("consent"),
+          service_consent: f.has("service_consent"),
         });
         target.querySelector("#sms-preferences [role=status]").textContent =
           "SMS preference saved.";
       });
+      const photoSection = document.createElement("section");
+      photoSection.className = "card";
+      photoSection.innerHTML = `<h2>Your visit photos</h2><p>Photos from your provider are available here. Sign in to your account to view them.</p>${jobs.map((j) => `<article><h3>${esc(j.service_date)} · ${esc(j.services.join(", "))}</h3><button class="button" data-visit-photos="${j.id}">View photos</button><div data-photo-gallery="${j.id}" role="status"></div></article>`).join("")}`;
+      target.prepend(photoSection);
+      photoSection.querySelectorAll("[data-visit-photos]").forEach(
+        (button) =>
+          (button.onclick = async () => {
+            const gallery = photoSection.querySelector(
+              `[data-photo-gallery="${button.dataset.visitPhotos}"]`,
+            );
+            button.disabled = true;
+            gallery.textContent = "Loading photos…";
+            try {
+              const body = { ...scope, job_id: button.dataset.visitPhotos };
+              const result = await request("visit-photos", body);
+              gallery.replaceChildren();
+              if (!result.photos.length)
+                gallery.textContent = "No photos uploaded for this visit yet.";
+              for (const photo of result.photos) {
+                const session = await MM.ensureSession();
+                const response = await fetch(
+                  "https://mowmatter-property.onrender.com/api/commerce/visit-photo",
+                  {
+                    method: "POST",
+                    headers: {
+                      Authorization: "Bearer " + session.access_token,
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ ...body, photo_id: photo.id }),
+                    signal: AbortSignal.timeout(30000),
+                  },
+                );
+                if (!response.ok) throw Error("Photo unavailable. Try again.");
+                const img = document.createElement("img");
+                const url = URL.createObjectURL(await response.blob());
+                img.onload = () => URL.revokeObjectURL(url);
+                img.onerror = () => URL.revokeObjectURL(url);
+                img.src = url;
+                img.alt = "Visit photo from your lawn care provider";
+                img.style.cssText =
+                  "max-width:100%;height:auto;margin:12px 0;border-radius:12px";
+                gallery.append(img);
+              }
+            } catch (e) {
+              gallery.textContent = e.message;
+            } finally {
+              button.disabled = false;
+            }
+          }),
+      );
       let id = crypto.randomUUID();
       bind(target.querySelector("#customer-request"), async (f) => {
         await request("request", { ...scope, id, ...Object.fromEntries(f) });

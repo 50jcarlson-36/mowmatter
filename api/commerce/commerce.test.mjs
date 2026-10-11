@@ -112,15 +112,38 @@ test("SMS preferences require explicit boolean and US number; preference save se
   );
   assert.equal(h.writes.length, 0);
   assert.equal(
-    (await h.call("sms-preferences", { phone: "+13865551234", consent: false }))
-      .status,
+    (
+      await h.call("sms-preferences", {
+        phone: "+13865551234",
+        consent: false,
+        service_consent: false,
+      })
+    ).status,
     200,
   );
   assert.equal(h.writes[0].body.consent, false);
-  assert.equal(h.writes[0].path, "rpc/mow_sms_preferences");
+  assert.equal(h.writes[0].path, "rpc/mow_sms_all_preferences");
 });
 test("disabled SMS prevents provider send and quote claim", async () => {
   const h = harness({ owner: true });
   assert.equal((await h.call("send-quote-sms")).status, 503);
   assert.equal(h.writes.length, 0);
+});
+test("visit photo endpoints deny other customers and reject unrelated jobs before reading storage", async () => {
+  assert.equal(
+    (
+      await harness({ email: "wrong@example.invalid" }).call("visit-photos", {
+        job_id: id,
+      })
+    ).status,
+    403,
+  );
+  assert.equal(
+    (await harness().call("visit-photos", { job_id: id })).status,
+    404,
+  );
+  assert.equal(
+    (await harness().call("visit-photo", { job_id: id, photo_id: id })).status,
+    404,
+  );
 });
