@@ -10,4 +10,4 @@ routes = [
 
 [assets]
 directory = "./web/dist"
-html_handling = "none"
+html_handling = "auto-trailing-slash"

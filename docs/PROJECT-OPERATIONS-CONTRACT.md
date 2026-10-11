@@ -131,3 +131,8 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - Cache-busted public /index.html still serves old content. Response includes rndr-id and last-modified October 11 01:04:37 UTC, evidence traffic still reaches a Render origin. Exact reason for Worker bypass remains unverified.
 - Next targeted check: Cloudflare zone DNS for apex record proxy status (Workers routes require proxied DNS), then route conflicts/active deployment if already proxied. Do not change Office/Crew/mail.
 - Direct dashboard attempt reached Cloudflare sign-in. No authenticated Cloudflare API connector is exposed in this session. Existing Git-connected builds remain functional; that connection does not provide dashboard/DNS edit access to the agent.
+
+## Apex activation and homepage repair — 2026-10-11 14:09 ET
+- Owner screenshot confirms apex CNAME @ -> mowmatter.onrender.com is Proxied. Office/Crew remain DNS only.
+- Public advantage.css and original before/after assets now return 200 with expected lengths (2771, 344497, 270802). /index.html serves updated 11165-byte homepage. DNS proxy activation resolved Worker bypass.
+- Public / returns 404 because html_handling none disables directory index resolution. Changed root wrangler.toml to auto-trailing-slash to serve index.html at /. Existing .html links redirect to canonical extensionless paths; query strings remain handled by Cloudflare. Verify public root after successful build before calling it complete.
