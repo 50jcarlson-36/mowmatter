@@ -24,7 +24,8 @@ Deno.serve(async (req: Request) => {
   if(!rate.ok)return reply(503,{error:'Please try again in a moment.'});
   if(!(await rate.json()))return reply(429,{error:'Too many requests. Please try again later.'});
   const clean=(x:unknown,max:number)=>typeof x==='string'?x.trim().slice(0,max):'';
-  const source:Record<string,string>={};for(const k of ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','referrer']){const v=clean(b.source?.[k],160);if(v)source[k]=v;}
+  const measurement=b.measurement_consent===true&&b.privacy_signal!==true&&b.measurement_opt_out!==true&&req.headers.get('sec-gpc')!=='1';
+  const source:Record<string,string>={};if(measurement)for(const k of ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','referrer']){const v=clean(b.source?.[k],160);if(v)source[k]=v;}
   const session=typeof b.session_id==='string'&&/^[0-9a-f-]{36}$/i.test(b.session_id)?b.session_id:crypto.randomUUID();
   if(b.kind==='compliance_request'){
    if(clean(b.website,200)||(b.request_type!=='unsubscribe'&&(!Number.isFinite(b.elapsed_ms)||b.elapsed_ms<2000)))return reply(400,{error:'Please review your request and try again.'});
@@ -37,6 +38,7 @@ Deno.serve(async (req: Request) => {
    return r.ok?reply(200,{ok:true}):reply(503,{error:'Your request could not be saved. Please try again.'});
   }
   if(b.kind==='event'){
+   if(!measurement)return reply(200,{ok:true,ignored:true});
    if(!events.has(b.event))return reply(400,{error:'Unknown event.'});
    const r=await db('mowmatter_funnel_events',{event:b.event,session_id:session,source});
    return r.ok?reply(200,{ok:true}):reply(503,{error:'Event could not be saved.'});
@@ -97,7 +99,7 @@ Deno.serve(async (req: Request) => {
   const suppressed=(await suppression.json()).length>0;
   const r=await db('mowmatter_leads?on_conflict=email',{email,first_name:clean(b.first_name,80),company:clean(b.company,120),phone:clean(b.phone,32),interest:['instant_quotes','featured_placement'].includes(b.interest)?b.interest:'platform',featured_zip:/^[0-9]{5}$/.test(clean(b.featured_zip,5))?clean(b.featured_zip,5):null,marketing_consent:b.marketing_consent===true&&!suppressed,source,snapshot:Object.keys(snapshot).length?snapshot:null});
   if(!r.ok){const err=await r.json();if(err.code!=='23505')return reply(503,{error:'We could not save your request. Please try again.'});}
-  else if(b.measurement_opt_out!==true) await db('mowmatter_funnel_events',{event:'lead_saved',session_id:session,source});
+  else if(measurement) await db('mowmatter_funnel_events',{event:'lead_saved',session_id:session,source});
   return reply(200,{ok:true});
  } catch {return reply(400,{error:'Please check your details and try again.'});}
 });
