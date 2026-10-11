@@ -1,0 +1,7 @@
+# Public marketing assets only. Office, Crew and the API deploy separately.
+name = "mowmatter"
+compatibility_date = "2026-10-11"
+
+[assets]
+directory = "./web/dist"
+html_handling = "none"
