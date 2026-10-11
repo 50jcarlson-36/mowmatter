@@ -164,3 +164,10 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 
 ## Connected intelligence graphic — 2026-10-11
 - Replaced plain hero context list with branded hub graphic: Mow Matter mark, matching weather/location/photo/calendar SVGs, connecting lines, compact context tiles and route/schedule/customer-history output strip. Responsive two-column tiles retain readable text on mobile. No live telemetry or automation status implied.
+
+
+## Photo-linked Mow Matter Care Tags — 2026-10-11
+- Added branded care-label cards directly beneath the real before/after comparison, matching numbered hedge, lawn and bed-edge annotations.
+- Tags include category, unconfirmed species status, code-native care/weather/calendar symbols, expandable instructions and optional service examples (+$50 hedge trimming, +$20 extra bed edging; mowing priced per approved plan).
+- Sample intervals and prices clearly labeled; no confirmed botanical identification, live diagnosis, charge or booking implied. Owner verifies care and scope; homeowner approves additional work.
+- Cards stack on narrow screens and use semantic headings/details without new JavaScript dependencies.
