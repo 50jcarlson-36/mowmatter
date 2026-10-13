@@ -335,3 +335,5 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - Customer OAuth callback now preserves business/customer query parameters, matching password recovery and signup return links. Provider authentication itself still requires a real user sign-in; no real messages sent in testing.
 - Optional SMS explanation remains available in a disclosure; footer uses flowing, two-column mobile links and safe-area spacing.
 - Office tests/build and shared-asset drift checks passed. Four authentication states tested at 320, 390, 768 and 1440 pixels with no horizontal overflow; intercepted Google handoff verified complete customer return URL.
+
+- Production release: `15c8455f9307cdd704d4c70916706cbb0cc8b230`; Office Render deployment `dep-db7b5vtg1s2s739rk9d0` live at 22:39:13 UTC. Public customer-account.html/.js/.css and mm-client.js matched release bytes. No Crew or API deployment was required.
