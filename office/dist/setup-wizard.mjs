@@ -224,6 +224,8 @@ export function mountSetupWizard({ getCatalog, onApply }) {
           "Open this preview on the Office host and sign in to request AI suggestions.",
         );
       const session = await MM.ensureSession();
+      const workspace = await MM.api({ action: "list" });
+      if (!workspace.company?.id) throw Error("Choose an owner workspace.");
       pending = true;
       $("ask-setup-ai").disabled = true;
       $("ask-setup-ai").textContent = "Getting suggestions…";
@@ -240,6 +242,7 @@ export function mountSetupWizard({ getCatalog, onApply }) {
               Authorization: "Bearer " + session.access_token,
             },
             body: JSON.stringify({
+              company_id: workspace.company.id,
               profile: profile(),
               services: base.services.map(({ id, name, mode }) => ({
                 id,
