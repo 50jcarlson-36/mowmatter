@@ -50,7 +50,7 @@ for (const type of [
           });
         return new Response(
           u.includes("mow_billing_accounts")
-            ? '[{"company_id":"company1"}]'
+            ? '[{"company_id":"11111111-1111-4111-8111-111111111111"}]'
             : "",
         );
       },
@@ -63,7 +63,10 @@ for (const type of [
       });
       assert.equal(r.status, 200);
     }
-    assert.equal(records[0].body.company_id, "company1");
+    assert.equal(
+      records[0].body.company_id,
+      "11111111-1111-4111-8111-111111111111",
+    );
     assert.equal(records[0].body.account_id, "acct_operator");
     assert.equal(
       records[0].body.amount_cents,
@@ -104,7 +107,7 @@ test("Connect activity database failure is retried instead of acknowledged", asy
     fetcher: async (u) =>
       new Response(
         u.includes("mow_billing_accounts")
-          ? '[{"company_id":"company1"}]'
+          ? '[{"company_id":"11111111-1111-4111-8111-111111111111"}]'
           : "failure",
         { status: u.includes("mow_billing_accounts") ? 200 : 503 },
       ),
@@ -191,7 +194,9 @@ test("Disallowed origins rejected before authentication", async () => {
   const r = await call(h, "/api/billing/checkout", {
     method: "POST",
     headers: { Origin: "https://evil.example" },
-    body: "{}",
+    body: JSON.stringify({
+      company_id: "11111111-1111-4111-8111-111111111111",
+    }),
   });
   assert.equal(r.status, 403);
   assert.equal(requested, false);
@@ -204,7 +209,12 @@ test("Authentication and owner authorization required", async () => {
         JSON.stringify(
           url.includes("/auth/")
             ? { id: "user1" }
-            : [{ role: "crew", company_id: "company1" }],
+            : [
+                {
+                  role: "crew",
+                  company_id: "11111111-1111-4111-8111-111111111111",
+                },
+              ],
         ),
         { status: 200 },
       ),
@@ -212,13 +222,17 @@ test("Authentication and owner authorization required", async () => {
   let r = await call(h, "/api/billing/status", {
     method: "POST",
     headers: { Origin: origin },
-    body: "{}",
+    body: JSON.stringify({
+      company_id: "11111111-1111-4111-8111-111111111111",
+    }),
   });
   assert.equal(r.status, 401);
   r = await call(h, "/api/billing/status", {
     method: "POST",
     headers: { Origin: origin, Authorization: "Bearer fake" },
-    body: "{}",
+    body: JSON.stringify({
+      company_id: "11111111-1111-4111-8111-111111111111",
+    }),
   });
   assert.equal(r.status, 403);
 });
@@ -239,7 +253,9 @@ test("Forged webhook rejected without database access", async () => {
   const r = await call(h, "/api/billing/webhook", {
     method: "POST",
     headers: { "stripe-signature": "t=1,v1=invalid" },
-    body: "{}",
+    body: JSON.stringify({
+      company_id: "11111111-1111-4111-8111-111111111111",
+    }),
   });
   assert.equal(r.status, 400);
   assert.equal(called, false);
@@ -296,7 +312,11 @@ test("Correct signed lifecycle event syncs known customer through atomic RPC", a
         if (url.includes("mow_billing_apply")) applied = JSON.parse(opts.body);
         return new Response("true");
       }
-      return new Response(JSON.stringify([{ company_id: "company1" }]));
+      return new Response(
+        JSON.stringify([
+          { company_id: "11111111-1111-4111-8111-111111111111" },
+        ]),
+      );
     },
   });
   const r = await call(h, "/api/billing/webhook", {
@@ -329,7 +349,7 @@ test("Plan fees use confirmed tiers, round cents, and fall back on unpaid plans"
 test("Completed visit checkout uses stored price and paid-plan fee, never client supplied amounts", async () => {
   let input, options, row;
   const a = {
-    company_id: "company1",
+    company_id: "11111111-1111-4111-8111-111111111111",
     customer_id: "acct_operator",
     plan: "growth",
     paid: true,
@@ -400,7 +420,12 @@ test("Completed visit checkout uses stored price and paid-plan fee, never client
         result = url.includes("/auth/")
           ? { id: "user1" }
           : url.includes("mow_crew_members")
-            ? [{ role: "owner", company_id: "company1" }]
+            ? [
+                {
+                  role: "owner",
+                  company_id: "11111111-1111-4111-8111-111111111111",
+                },
+              ]
             : url.includes("mow_crew_jobs")
               ? [{ id: "job1", status: "completed", price_cents: 20000 }]
               : url.includes("/rpc/")
@@ -417,7 +442,7 @@ test("Completed visit checkout uses stored price and paid-plan fee, never client
     method: "POST",
     headers: { Origin: origin, Authorization: "Bearer fake" },
     body: JSON.stringify({
-      company_id: "company1",
+      company_id: "11111111-1111-4111-8111-111111111111",
       job_id: "job1",
       amount: 1,
       fee: 0,
@@ -459,7 +484,12 @@ test("Connect onboarding never creates account before activation", async () => {
           u.includes("/auth/")
             ? { id: "user1" }
             : u.includes("mow_crew_members")
-              ? [{ company_id: "company1", role: "owner" }]
+              ? [
+                  {
+                    company_id: "11111111-1111-4111-8111-111111111111",
+                    role: "owner",
+                  },
+                ]
               : [],
         ),
       ),
@@ -467,7 +497,9 @@ test("Connect onboarding never creates account before activation", async () => {
   const r = await call(h, "/api/billing/connect/onboarding", {
     method: "POST",
     headers: { Origin: origin, Authorization: "Bearer fake" },
-    body: "{}",
+    body: JSON.stringify({
+      company_id: "11111111-1111-4111-8111-111111111111",
+    }),
   });
   assert.equal(r.status, 503);
   assert.equal(made, false);
@@ -557,7 +589,12 @@ test("Accounting reads the operator account, not the platform balance", async ()
           u.includes("/auth/")
             ? { id: "user1" }
             : u.includes("mow_crew_members")
-              ? [{ role: "owner", company_id: "company1" }]
+              ? [
+                  {
+                    role: "owner",
+                    company_id: "11111111-1111-4111-8111-111111111111",
+                  },
+                ]
               : [a],
         ),
       ),
@@ -565,7 +602,9 @@ test("Accounting reads the operator account, not the platform balance", async ()
   const r = await call(h, "/api/billing/accounting", {
     method: "POST",
     headers: { Origin: origin, Authorization: "Bearer fake" },
-    body: "{}",
+    body: JSON.stringify({
+      company_id: "11111111-1111-4111-8111-111111111111",
+    }),
   });
   assert.equal(r.status, 200);
   assert.deepEqual(scopes, ["acct_operator", "acct_operator", "acct_operator"]);

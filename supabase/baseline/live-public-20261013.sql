@@ -726,6 +726,27 @@ CREATE INDEX mow_jobs_plan ON public.mow_crew_jobs USING btree (company_id, plan
 CREATE INDEX mow_homeowner_subscriptions_customer ON public.mow_homeowner_subscriptions USING btree (company_id, customer_id);
 CREATE INDEX mow_payment_activity_company_time ON public.mow_payment_activity USING btree (company_id, event_created DESC);
 CREATE INDEX mow_cash_company ON public.mow_cash_entries USING btree (company_id, entry_date);
+create schema if not exists mowmatter_private;
+grant usage on schema mowmatter_private to authenticated;
+CREATE OR REPLACE FUNCTION mowmatter_private.launch_updates(p_enabled boolean)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare uid uuid:=auth.uid(); account_email text; confirmed timestamptz; enabled boolean;
+begin
+ if uid is null or p_enabled is null then raise exception 'Sign in to save an update preference.' using errcode='42501'; end if;
+ select lower(trim(email)),email_confirmed_at into account_email,confirmed from auth.users where id=uid;
+ if account_email is null or confirmed is null then raise exception 'Confirm your email first.' using errcode='42501'; end if;
+ enabled:=p_enabled and not exists(select 1 from public.mowmatter_marketing_suppressions where lower(email)=account_email);
+ insert into public.mowmatter_leads(email,launch_updates,consent_version,source) values(account_email,enabled,'2026-10-08-login','{"channel":"business_login"}'::jsonb)
+ on conflict(email) do update set launch_updates=excluded.launch_updates,consent_version=excluded.consent_version,source=public.mowmatter_leads.source||excluded.source;
+ return jsonb_build_object('ok',true,'enabled',enabled);
+end $function$;
+revoke all on function mowmatter_private.launch_updates(boolean) from public,anon;
+grant execute on function mowmatter_private.launch_updates(boolean) to authenticated;
+
 CREATE OR REPLACE FUNCTION public.mowmatter_rate_limit(p_key text, p_limit integer)
  RETURNS boolean
  LANGUAGE plpgsql
@@ -1795,4 +1816,5 @@ revoke all on function mow_sms_all_preferences(uuid,text,uuid,uuid,text,boolean,
 grant execute on function mow_sms_all_preferences(uuid,text,uuid,uuid,text,boolean,boolean) to service_role;
 revoke all on function mow_visit_sms_claim(uuid,uuid) from public,anon,authenticated;
 grant execute on function mow_visit_sms_claim(uuid,uuid) to service_role;
+grant execute on function public.mm_launch_updates(boolean) to authenticated;
 commit;

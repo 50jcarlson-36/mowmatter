@@ -39,7 +39,7 @@ Outstanding launch gates: enable Supabase leaked-password protection if the orga
 
 ## P1 recovery and entitlement changes (not deployed)
 
-Apply `supabase/migrations/20261011134937_payment_recovery_p1.sql` followed by `20261011135139_entitlements_and_crew_scope.sql` to a **local or isolated staging copy** with the existing Crew, Office, billing, recurring billing, and Yard Operations schemas installed. These files are additive production migration candidates, not permission to apply them to the live project. Apply the schema before deploying the dependent API/Edge/UI changes in a future approved release. Keep payment and AI activation flags off until sandbox validation is complete.
+Apply `supabase/migrations/20261013155735_payment_recovery_p1.sql` followed by `20261013155746_entitlements_and_crew_scope.sql` to a **local or isolated staging copy** with the existing Crew, Office, billing, recurring billing, and Yard Operations schemas installed. These files are additive production migration candidates, not permission to apply them to the live project. Apply the schema before deploying the dependent API/Edge/UI changes in a future approved release. Keep payment and AI activation flags off until sandbox validation is complete.
 
 One-time, Office, and recurring homeowner checkout requests are persisted before Stripe is called. Retries retain the exact payload, account scope, and nonce. Only a retrieved Stripe session in `expired` state allows another attempt. Unknown results older than 23 hours require reconciliation because Stripe can prune idempotency keys after 24 hours. Legacy attempts have no trustworthy replay payload and are blocked for review rather than recreated. Attempt history remains available after expiration.
 

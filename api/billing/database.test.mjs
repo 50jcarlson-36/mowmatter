@@ -21,8 +21,8 @@ async function fixture() {
     "api/commerce/visit-proposals.sql",
     "api/commerce/visit-sms.sql",
     "supabase/migrations/20261010144631_yard_weather_operations.sql",
-    "supabase/migrations/20261011134937_payment_recovery_p1.sql",
-    "supabase/migrations/20261011135139_entitlements_and_crew_scope.sql",
+    "supabase/migrations/20261013155735_payment_recovery_p1.sql",
+    "supabase/migrations/20261013155746_entitlements_and_crew_scope.sql",
   ])
     await db.exec(await readFile(new URL(file, root), "utf8"));
   await db.query("insert into auth.users(id) values($1)", [actor]);
@@ -172,13 +172,13 @@ test("customer caps permit editing at cap and do not trust unpaid tier labels", 
   try {
     for (let i = 0; i < 10; i++)
       await db.query(
-        "insert into mow_customers(company_id,name,address) values($1,'Test','123 Street')",
+        "insert into mow_customers(company_id,name,address,city) values($1,'Test','123 Street','Denver CO')",
         [cid],
       );
     await assert.rejects(
       () =>
         db.query(
-          "insert into mow_customers(company_id,name,address) values($1,'Over','123 Street')",
+          "insert into mow_customers(company_id,name,address,city) values($1,'Over','123 Street','Denver CO')",
           [cid],
         ),
       /limit reached/,
@@ -190,7 +190,7 @@ test("customer caps permit editing at cap and do not trust unpaid tier labels", 
     await assert.rejects(
       () =>
         db.query(
-          "insert into mow_customers(company_id,name,address) values($1,'Over','123 Street')",
+          "insert into mow_customers(company_id,name,address,city) values($1,'Over','123 Street','Denver CO')",
           [cid],
         ),
       /limit reached/,
@@ -199,7 +199,7 @@ test("customer caps permit editing at cap and do not trust unpaid tier labels", 
       "update mow_billing_accounts set plan='growth',status='active',paid=true",
     );
     await db.query(
-      "insert into mow_customers(company_id,name,address) values($1,'Allowed','123 Street')",
+      "insert into mow_customers(company_id,name,address,city) values($1,'Allowed','123 Street','Denver CO')",
       [cid],
     );
   } finally {
@@ -264,7 +264,7 @@ test("crew expansion is paid, cross-crew access is denied, today survives 500 ol
     );
     const southJob = randomUUID();
     await db.query(
-      "insert into mow_crew_jobs(id,company_id,assigned_to,customer_name,address,service_date) values($1,$2,$3,'Private','123 Street',current_date)",
+      "insert into mow_crew_jobs(id,company_id,assigned_to,customer_name,address,city,service_date) values($1,$2,$3,'Private','123 Street','Denver CO',current_date)",
       [southJob, cid, worker],
     );
     assert.equal(
@@ -281,7 +281,7 @@ test("crew expansion is paid, cross-crew access is denied, today survives 500 ol
       /access denied/,
     );
     await db.query(
-      "insert into mow_crew_jobs(company_id,assigned_to,customer_name,address,service_date) select $1,$2,'Old','123 Street',current_date-100 from generate_series(1,501)",
+      "insert into mow_crew_jobs(company_id,assigned_to,customer_name,address,city,service_date) select $1,$2,'Old','123 Street','Denver CO',current_date-100 from generate_series(1,501)",
       [cid, actor],
     );
     const today = await db.query(
@@ -291,7 +291,7 @@ test("crew expansion is paid, cross-crew access is denied, today survives 500 ol
     assert(today.rows.some((j) => j.id === jid));
     assert.equal(today.rows.length, 2);
     await db.query(
-      "insert into mow_crew_jobs(company_id,assigned_to,customer_name,address,service_date) select $1,$2,'Today','123 Street',current_date from generate_series(1,250)",
+      "insert into mow_crew_jobs(company_id,assigned_to,customer_name,address,city,service_date) select $1,$2,'Today','123 Street','Denver CO',current_date from generate_series(1,250)",
       [cid, actor],
     );
     let cursor = null;
