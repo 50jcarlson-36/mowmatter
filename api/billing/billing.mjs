@@ -212,9 +212,14 @@ export function createBilling({
     });
     if (!r.ok) throw Object.assign(Error("Sign in again"), { status: 401 });
     const user = await r.json();
-    const filter = companyId
-      ? "&company_id=eq." + encodeURIComponent(companyId)
-      : "";
+    if (
+      typeof companyId !== "string" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        companyId,
+      )
+    )
+      throw Object.assign(Error("Choose a valid business"), { status: 400 });
+    const filter = "&company_id=eq." + encodeURIComponent(companyId);
     const rows = await db(
       "mow_crew_members?select=company_id,role&user_id=eq." +
         encodeURIComponent(user.id) +
@@ -694,6 +699,10 @@ export function createBilling({
             "&customer_id=eq." +
             body.customer_id,
         );
+        const configuration = await ready();
+        const connection = configuration.homeowner_payments_enabled
+          ? await connected(a)
+          : null;
         send(200, {
           invoices: access.invoices.map((i) => ({
             id: i.id,
@@ -712,9 +721,9 @@ export function createBilling({
                       "unpaid",
           })),
           payments_enabled:
-            (await ready()).homeowner_payments_enabled &&
-            (await connected(a))?.payments_ready === true &&
-            (await connected(a))?.payouts_ready === true,
+            configuration.homeowner_payments_enabled &&
+            connection?.payments_ready === true &&
+            connection?.payouts_ready === true,
         });
         return true;
       }

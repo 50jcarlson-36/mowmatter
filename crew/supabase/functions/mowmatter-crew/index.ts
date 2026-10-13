@@ -2,9 +2,7 @@ import { jobWindow, canAccessJob } from "./job-window.mjs";
 import { deliverJobEmail } from "./email.mjs";
 import { createClient } from "npm:@supabase/supabase-js@2.102.0";
 const origins = new Set([
-  "https://mowmatter-crew.steelfurymx.chatgpt.site",
   "https://crew.mowmatter.com",
-  "https://mowmatter-office.steelfurymx.chatgpt.site",
   "https://office.mowmatter.com",
   "https://mowmatter-office.onrender.com",
   "https://mowmatter-crew.onrender.com",
@@ -65,7 +63,10 @@ Deno.serve(async (req) => {
     }
     const checked = async (q: any) => {
       const r = await q;
-      if (r.error) throw new Error(r.error.message);
+      if (r.error) {
+        console.error("Crew database failure", r.error.code, r.error.message);
+        throw new Error("Visit could not be saved. Refresh and try again.");
+      }
       return r.data;
     };
     if (body.action === "bootstrap") {
@@ -352,6 +353,9 @@ Deno.serve(async (req) => {
       const j = body.job;
       if (
         !j ||
+        typeof j.city !== "string" ||
+        j.city.trim().length < 1 ||
+        j.city.length > 100 ||
         typeof j.address !== "string" ||
         j.address.length < 3 ||
         j.address.length > 200 ||
@@ -432,7 +436,7 @@ Deno.serve(async (req) => {
             assigned_to: j.assigned_to,
             customer_name: j.customer_name.trim(),
             address: j.address.trim(),
-            city: String(j.city || "Palm Coast, FL").slice(0, 100),
+            city: j.city.trim(),
             service_date: j.service_date,
             scheduled_time: j.scheduled_time || "09:00",
             services,

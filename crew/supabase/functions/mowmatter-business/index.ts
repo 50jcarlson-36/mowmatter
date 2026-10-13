@@ -3,7 +3,6 @@ import { normalizeBrand, portalURL, invoiceHTML } from "./model.mjs";
 const origins = new Set([
   "https://office.mowmatter.com",
   "https://mowmatter-office.onrender.com",
-  "https://mowmatter-office.steelfurymx.chatgpt.site",
 ]);
 const uuid = (v: unknown) =>
   typeof v === "string" && /^[0-9a-f-]{36}$/i.test(v);
@@ -33,7 +32,7 @@ Deno.serve(async (req) => {
     );
     const checked = async (q: any) => {
       const r = await q;
-      if (r.error) throw Error(r.error.message);
+      if (r.error) { console.error('Business database failure', r.error.code, r.error.message); throw Error('Business change could not be saved. Refresh and try again.'); }
       return r.data;
     };
     const {
@@ -229,7 +228,7 @@ Deno.serve(async (req) => {
     }
     if(b.action==='settlement'){
       if(!uuid(b.invoice_id)||!['open','paid_external','void'].includes(b.status)||typeof b.note!=='string'||b.note.trim().length<3||b.note.length>500)throw Error('Review the invoice state and add a note');
-      const changed=await checked(db.from('mow_customer_invoices').update({settlement_status:b.status,settlement_note:b.note.trim(),settlement_by:user.id,settlement_at:new Date().toISOString()}).eq('company_id',company.id).eq('id',b.invoice_id).select('id').maybeSingle());
+      const changed=await checked(db.rpc('mow_invoice_settle',{actor:user.id,cid:company.id,iid:b.invoice_id,state:b.status,note:b.note.trim()}));
       if(!changed)throw Error('Invoice unavailable');return out({ok:true});
     }
     if (b.action === "send_invoice") {

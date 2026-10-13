@@ -1,8 +1,8 @@
-const origins = new Set(['https://mowmatter.steelfurymx.chatgpt.site','https://mowmatter.com','https://www.mowmatter.com','https://mowmatter.onrender.com']);
+const origins = new Set(['https://mowmatter.com','https://www.mowmatter.com','https://mowmatter.onrender.com']);
 const events = new Set(['cta_click','assessment_started','assessment_completed','signup_started','growth_lab_used']);
 Deno.serve(async (req: Request) => {
  const origin=req.headers.get('origin')||'';
- const headers={'Access-Control-Allow-Origin':origins.has(origin)?origin:'https://mowmatter.steelfurymx.chatgpt.site','Access-Control-Allow-Headers':'apikey, content-type','Access-Control-Allow-Methods':'POST, OPTIONS','Vary':'Origin','Content-Type':'application/json','Cache-Control':'no-store'};
+ const headers={'Access-Control-Allow-Origin':origins.has(origin)?origin:'','Access-Control-Allow-Headers':'apikey, content-type','Access-Control-Allow-Methods':'POST, OPTIONS','Vary':'Origin','Content-Type':'application/json','Cache-Control':'no-store'};
  const reply=(status:number,data:unknown)=>new Response(JSON.stringify(data),{status,headers});
  if(!origins.has(origin)) return reply(403,{error:'Request origin is not allowed.'});
  if(req.method==='OPTIONS') return new Response(null,{status:204,headers});
@@ -17,6 +17,15 @@ Deno.serve(async (req: Request) => {
  try {
   const raw=await req.text();if(raw.length>8192)return reply(413,{error:'Submission is too large.'});
   const b=JSON.parse(raw);if(!b||typeof b!=='object')return reply(400,{error:'Invalid submission.'});
+  if(!['lead','homeowner','compliance_request','sale_optout','event','directory'].includes(b.kind))return reply(400,{error:'Unknown request.'});
+  // A site-wide server-owned budget cannot be bypassed by rotating forwarded headers.
+  // The per-IP limiter below is supplemental until gateway provenance is verified.
+  const group=b.kind==='directory'?'DIRECTORY':b.kind==='event'?'EVENT':'SUBMISSION';
+  const cap=Number(Deno.env.get('MOW_CAPTURE_'+group+'_HOURLY_LIMIT')||(group==='DIRECTORY'?'6000':group==='EVENT'?'12000':'600'));
+  if(!Number.isSafeInteger(cap)||cap<1||cap>100000)return reply(503,{error:'Submission limits are unavailable.'});
+  const budget=await db('rpc/mowmatter_rate_limit',{p_key:'capture:'+group+':'+new Date().toISOString().slice(0,13),p_limit:cap});
+  if(!budget.ok)return reply(503,{error:'Please try again in a moment.'});
+  if(!(await budget.json()))return reply(429,{error:'Too many requests. Please try again later.'});
   const ip=(req.headers.get('x-forwarded-for')||req.headers.get('cf-connecting-ip')||'unknown').split(',')[0].trim();
   const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(secret+ip+new Date().toISOString().slice(0,13)));
   const hash=Array.from(new Uint8Array(bytes)).map(x=>x.toString(16).padStart(2,'0')).join('');
@@ -51,7 +60,7 @@ Deno.serve(async (req: Request) => {
    return r.ok?reply(200,{ok:true}):reply(503,{error:'Event could not be saved.'});
   }
   if(b.kind==='directory'){
-   const zip=clean(b.zip,5),lat=Number(b.latitude),lng=Number(b.longitude),hasGeo=typeof b.latitude==='number'&&typeof b.longitude==='number'&&Number.isFinite(lat)&&Number.isFinite(lng)&&Math.abs(lat)<=90&&Math.abs(lng)<=180;
+   const rawZip=typeof b.zip==='string'?b.zip.trim():'',zip=/^[0-9]{5}$/.test(rawZip)?rawZip:'',lat=Number(b.latitude),lng=Number(b.longitude),hasGeo=typeof b.latitude==='number'&&typeof b.longitude==='number'&&Number.isFinite(lat)&&Number.isFinite(lng)&&Math.abs(lat)<=90&&Math.abs(lng)<=180;
    if(!/^[0-9]{5}$/.test(zip)&&!hasGeo)return reply(400,{error:'Enter a ZIP code or share your location.'});
    const query=new URLSearchParams({select:'id,company_name,public_slug,description,service_zips,services,latitude,longitude',status:'eq.approved',limit:'100'});
    if(zip)query.set('service_zips','cs.{'+zip+'}');
@@ -69,7 +78,7 @@ Deno.serve(async (req: Request) => {
    if(clean(b.website,200)||!Number.isFinite(b.elapsed_ms)||b.elapsed_ms<2000)return reply(400,{error:'Please review your request and try again.'});
    const email=clean(b.email,255).toLowerCase();
    const allowedServices=new Set(['mowing','edging','hedges','leaves','cleanup','mulch']);
-   const services=Array.isArray(b.services)?[...new Set(b.services)].filter(x=>allowedServices.has(x)):[];
+   const services=Array.isArray(b.services)?[...new Set(b.services)].filter((x): x is string=>typeof x==='string'&&allowedServices.has(x)):[];
    const address=clean(b.address,200),city=clean(b.city,80),state=clean(b.state,2).toUpperCase(),zip=clean(b.zip,5);
    if(email.length>254||!/^\S+@[^\s@]+\.[^\s@]+$/.test(email))return reply(400,{error:'Enter a valid email address.'});
    if(address.length<5||!city||!state.match(/^[A-Z]{2}$/)||!zip.match(/^[0-9]{5}$/)||!services.length)return reply(400,{error:'Enter your address and select at least one service.'});

@@ -224,3 +224,50 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - Existing Office visit list remains available when dispatch schema is unavailable. Marketing includes a graphical communication preview and states that approach/schedule-change SMS are being activated.
 - Local Postgres and DOM checks passed for ownership, publication, progress, consent/opt-outs, duplicates, stale/overlap checks, reordering, secure service links and care navigation. No carrier delivery or real customer SMS was sent.
 - See docs/customer-progress-dispatch.md for exact activation order and verification limits. Restore Supabase write access; deploy API/Office/Crew together on Render; then enable the flag and verify an opted-in test route.
+
+
+## Go-live code audit — 2026-10-13
+
+- Full report: docs/GO-LIVE-AUDIT-2026-10-13.md (audited commit 3f5edbe). Verdict: code security model sound; not ready for full commercial go-live until blockers B1–B4 are closed.
+- Passed: `npm run check` 131/131 tests; `npm audit --omit=dev` 0 vulnerabilities; no committed secrets; every SQL function revoked from anon/authenticated.
+- Live Supabase (read-only): no anon/authenticated privileges on mow* tables/functions; advisors show only INFO RLS-no-policy (intended deny-all); mow-crew-proof private, mow-business-logos public; mow_dispatch_routes/mow_route_notices absent.
+- Migration drift confirmed: live history has 17 versions (20261004222330…20261011025922); repo has 3 files and 20261010144631 is not in live history. Several production tables/functions (mowmatter_leads, mowmatter_homeowner_requests, mowmatter_directory_listings, mowmatter_rate_limit, etc.) are not defined in the repo.
+- Live edge functions: capture v10, crew v8, activity v1, growth v2, business v3, invoice-delivery v1; all verify_jwt=false with in-function auth.
+- Public sites, Render, Stripe, Resend and Vonage were not reachable from the audit environment (network policy 403); their state is unverified by this audit.
+
+## Audit remediation prepared — 2026-10-13
+
+- The audited source lives on claude/mowmatter-code-audit-yzacsy; the earlier local payment-recovery checkout is older and has separate unfinished Bird edits. Remediation is prepared in an isolated workspace.
+- See docs/GO-LIVE-AUDIT-FIXES-2026-10-13.md for C1–C11 status and release order. Removed duplicate deploy.yml; existing Cloudflare Workers Builds remains the intended automatic marketing publisher.
+- Supabase read access succeeded: recovered all 17 original migration SQL records and captured a data-free public application schema (44 tables, 42 functions, four triggers). This does not reconcile migration history, validate a PostGIS restore, confirm backups or deploy any pending SQL.
+- B1–B4 remain commercial launch gates. C5 needs verified gateway IP provenance/CAPTCHA. Route notices remain disabled. No production writes, deployment, live payment or customer communication occurred in this remediation.
+
+## Launch verification — 2026-10-13
+
+- Live API health reports Bird configured but disabled; missing activation flags are MOW_SMS_ENABLED, BIRD_REGISTRATION_APPROVED and BIRD_WEBHOOKS_VERIFIED. No credentials were exposed.
+- Bird workspace ws_01m4p5vnn3ecjr6x465fw83r1d matches Mowmatter. Sender +12019088951 (snd_01m4rg70njfg6vxbdt2vz7bdez) is pending_registrations; US requirements report registration_required. Brand brd_01m4rfy4kzfmqvqxwtj623p8ga is approved, but has_campaigns=false and campaign list is empty. Account funding alone does not establish SMS readiness.
+- Existing Bird webhook whk_01m4tjc56nfn5t9ppk0qfjh94a at /api/commerce/sms/bird/webhook accepted a signed synthetic sms.delivered test with HTTP 200 (138 ms). This confirms signed reachability, not carrier delivery, real payload persistence or STOP/HELP behavior.
+- Marketing works in a real browser. A Python root request received 403, but browser navigation and curl /early-access succeeded; do not report the entire public site down.
+- Browser verified embedded Business Login refusal. Live Office header responses differed across cache nodes: one allowed apex/www framing, another returned frame-ancestors none. Added an always-visible direct login fallback to early-access source; live header correction is still required.
+- Office and Crew HTTP checks return 200 with CSP/HSTS. Render dashboard requires sign-in, so deployed commit IDs and instance plan remain unverified.
+- Live payment config reports checkout/homeowner payments enabled, but no real charge/refund/payout was run. Payment attempts, dispatch routes, route notices and guarded settlement objects are absent in Supabase. PRs #4/#5/#6 remain open; do not equate a deployed Bird adapter with a complete go-live release.
+
+## Campaign execution and live header outcome
+
+- Bird campaign cmp_01m4tqyt9ffe49zsjgwwxjrxyd / TCR CYDJCUX was submitted October 13 at 9:41:44 AM Eastern. Sender +12019088951 is assigned; campaign and carrier linkage remain pending. Read-back reports numbers_linked=true. SMS is not activated and no test/customer text was sent.
+- Office CSP correction is live and fresh HTTP responses allow only apex/www framing. Existing authenticated signup navigation reaches the Office dashboard.
+- Verified service versions: API 32c10f09368f62346b280722715f8397a7b67b41, Office 7b3e125d78ad5d9757d203ef47b3399fb8b93629, Crew fdb6e70e9f972832f95c346ea51df2f6a76e5037. A combined release is not yet deployed.
+- The owner approved the $7/month API upgrade. Render started a compute-change deployment of older main 3f5edbe09b7620c68961c1935147725551206a6e, which lacks Bird; it was canceled (dep-db73b2ss728c73da1d30) before becoming live. The existing Bird commit remains live.
+- A specific-commit redeployment of the existing Bird API is prepared but automatic approval review rejected execution because the plan approval did not explicitly authorize production redeployment. Explicit approval has been requested. The always-on upgrade is not yet verified active.
+
+## Approved Bird redeployment and source pin
+
+- Explicit owner authorization received for deployment of 32c10f09368f62346b280722715f8397a7b67b41. Deployment dep-db73d14s728c73da7bh0 succeeded in 46.5 seconds, with Bird retained.
+- The canceled compute-change deployment rolled the plan back to Free. Created release/bird-api-32c10f0 at exactly the approved live commit and configured the API source to that branch with auto-deploy still Off; this avoids future compute/environment changes selecting older main without Bird. This is a temporary source pin pending the combined release of PRs #4/#5/#6, not a change to the repository production branch.
+- Reapplied the owner-approved $7/month compute selection against the pinned source. Final paid-plan/deployment verification remains in progress.
+
+## Verified upgrade complete — October 13, 9:51 AM Eastern
+
+- API is active on the owner-approved $7/month 0.5 CPU / 512 MB plan. Compute-change deployment dep-db73ece7bikc73a24da0 succeeded in 35.9 seconds at source 32c10f09368f62346b280722715f8397a7b67b41. Render's current compute page confirms the paid option checked. Source is pinned to release/bird-api-32c10f0; auto-deploy remains Off.
+- Carrier campaign CYDJCUX remains pending with the sender attached. The human confirmed Bird's registration/payment page; no customer SMS was sent.
+- Office CSP repair is live. Full commercial go-live is not claimed: carrier delivery/STOP/HELP checks, payment-recovery/schema release, combined service versions and restore validation remain outstanding.

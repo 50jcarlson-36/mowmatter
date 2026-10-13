@@ -29,5 +29,5 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - run: deno check --no-lock crew/supabase/functions/mowmatter-crew/index.ts
+      - run: deno check --no-lock crew/supabase/functions/mowmatter-crew/index.ts crew/supabase/functions/mowmatter-business/index.ts supabase/functions/mowmatter-capture/index.ts supabase/functions/mowmatter-growth/index.ts
       - run: git diff --check

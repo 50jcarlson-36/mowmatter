@@ -1,0 +1,7 @@
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000
+  Permissions-Policy: camera=(self), geolocation=(self), microphone=()
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' ; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://pzymmsfjgspvzbivzvkx.supabase.co; font-src 'self' data:; connect-src 'self' https://pzymmsfjgspvzbivzvkx.supabase.co wss://pzymmsfjgspvzbivzvkx.supabase.co https://mowmatter-property.onrender.com; frame-src 'none'; form-action 'self'; worker-src 'self' blob:; upgrade-insecure-requests
+  X-Frame-Options: DENY

@@ -39,7 +39,7 @@ async function fixture() {
     [cid],
   );
   await db.query(
-    "insert into mow_crew_jobs(id,company_id,assigned_to,customer_name,address,service_date,status) values($1,$2,$3,'Test','123 Lawn St',current_date,'completed')",
+    "insert into mow_crew_jobs(id,company_id,assigned_to,customer_name,address,city,service_date,status) values($1,$2,$3,'Test','123 Lawn St','Denver, CO',current_date,'completed')",
     [jid, cid, actor],
   );
   return db;

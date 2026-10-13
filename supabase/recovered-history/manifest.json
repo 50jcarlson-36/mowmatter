@@ -1,0 +1,74 @@
+{
+  "source": "pzymmsfjgspvzbivzvkx/schema_migrations",
+  "captured_date": "2026-10-13",
+  "records": [
+    {
+      "file": "20261004222330_mowmatter_early_access_and_funnel.sql",
+      "sha256": "32d695ee229a06feaaacc720b5f4d4e07b2dc0659f4cb244942de6cb520db8e1"
+    },
+    {
+      "file": "20261004230317_mowmatter_homeowner_intake.sql",
+      "sha256": "abcccf26257ff534c5b36074aa747e1eb250801dc239c79c398f6b45bd59afcf"
+    },
+    {
+      "file": "20261004230842_mowmatter_local_directory.sql",
+      "sha256": "b4ad494f2ea04e106889c3f32fb22fa33ed01b78ea2f30419b60139c6d4e33d2"
+    },
+    {
+      "file": "20261005150956_mow_property_lookup_trial.sql",
+      "sha256": "bee853edf66fe93203e89306f6544cf0d0b1e93e71d1501e787c5f4b0ca7458d"
+    },
+    {
+      "file": "20261005215922_crew_assignment_auth_lookup.sql",
+      "sha256": "a956fe1ef4af00f1a9eaf50390546aa1f7760dc0dfe37e7f17a03141f2dd8656"
+    },
+    {
+      "file": "20261006193458_mowmatter_connect_payment_tracking.sql",
+      "sha256": "15a58cf68b008d2c57dc1c34c1a7ba3892774915f761db4cda5fdc871b221392"
+    },
+    {
+      "file": "20261007113113_mowmatter_compliance_requests_and_suppressions.sql",
+      "sha256": "814ab00c8fd7b0542cd8d1d1715616be89c820b22fec8dbffac91a04e186ac97"
+    },
+    {
+      "file": "20261007132630_payment_activity_audit.sql",
+      "sha256": "37328e90dd7cb6400f4b47dc0ca38d3deaa721a3b64879348b204bcf3ab7f83f"
+    },
+    {
+      "file": "20261008170829_business_login_launch_updates.sql",
+      "sha256": "2eef91483a102706c881fad832317f29dceab95235a370230ea412894d0829f6"
+    },
+    {
+      "file": "20261008171018_launch_update_unsubscribe.sql",
+      "sha256": "e715d641c91c4c9b59a4c5bf7f6b49beb66260d54eb5393273ccb8e80695350a"
+    },
+    {
+      "file": "20261010200403_business_branding_customer_invoices.sql",
+      "sha256": "7963d38ee1a70c516da5a2c9ce3b3e45b5ccfbb99293096e96fe76edf482c52b"
+    },
+    {
+      "file": "20261011005952_durable_referral_sale_optout.sql",
+      "sha256": "1aa1fbeb65c72a53dab4f3d128f8253c9b208cbfe05c16d72b844a8d95f910d4"
+    },
+    {
+      "file": "20261011014211_customer_commerce_and_recurring_authorization.sql",
+      "sha256": "60b0eb58a07e2548c7315cea75ee4e65940fde178cecae8082115fbe1ffd6482"
+    },
+    {
+      "file": "20261011021621_invoice_delivery_and_subscription_event_ordering.sql",
+      "sha256": "95d07680d2901fee8ff7cb6a3acb9679406eb204371861aca5eafbd3c8850ab2"
+    },
+    {
+      "file": "20261011021812_guard_authorized_recurring_service_changes.sql",
+      "sha256": "73395649d2df1b82d987963ca09156fa1ce6f5e878452dee75b06595963b522e"
+    },
+    {
+      "file": "20261011021840_preserve_original_visit_for_addon_retry.sql",
+      "sha256": "32cb1b52f35f4a9b61c1c2225439165e4ca987547d20bc7bca46cc2cd1ffda43"
+    },
+    {
+      "file": "20261011025922_visit_status_sms_consent.sql",
+      "sha256": "4d7d46d2884393ccbfd361330cfc68db17f0a6a01189eaec20e9a5c6c392b289"
+    }
+  ]
+}
