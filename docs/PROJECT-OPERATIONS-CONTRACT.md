@@ -318,3 +318,11 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - Corrected invoice/dialog typography and reflow, legacy invoice labels, Accounting summary overflow, customer-account padding, wrapping Office actions and Crew safe-area/touch controls. Email invoices now use the same single-column model plus viewport wrapper. No payment, SMS, customer-record or auth-policy changes.
 - Office/Crew tests and builds, branding/model/access tests, source and mirror checks passed. Render browser is signed out; frontend source publication alone is not an Office/Crew production release. Supabase Business and invoice-delivery require matching model deployments with existing custom auth preserved.
 - Shared-link artwork from 9f33079 was independently verified live on the apex; both initial HTML and JPEG matched repository bytes, and Cloudflare build/quality checks succeeded.
+
+
+## Mobile release verified — 2026-10-13 22:10 UTC
+
+- Application release `b0fda19cec3fc03bea3e3ed71f3048b6a51a54cd` passed GitHub quality and Cloudflare Workers Builds.
+- Render connection resolved the earlier signed-out-browser blocker. Office deployment `dep-db7ao92vcj2c73ctr1fg` and Crew deployment `dep-db7ao9l9fdbs73dgn6n0` are live at that application SHA; auto-deploy remains off. Public Office business-branding.css, business-branding.js and office-live.css, plus Crew crew.css, matched release bytes using a release query after deployment.
+- Supabase `mowmatter-business` version 6 and `mowmatter-invoice-delivery` version 3 are ACTIVE. Read-back entrypoints and invoice models matched release source; existing custom authentication and verify_jwt=false were preserved.
+- No API deployment, payment, SMS, auth-policy or customer-record change, and no customer communications sent during this layout release. The 192 local viewport checks remain layout evidence, not physical-device, email-client or complete authenticated transaction certification.

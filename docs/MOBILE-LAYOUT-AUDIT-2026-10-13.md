@@ -30,3 +30,11 @@ Scope: public marketing, Office, Crew, homeowner account and invoice presentatio
 - Deploy matching invoice models through the existing Supabase Business and invoice-delivery functions, preserving custom authentication and current `verify_jwt=false`. Do not deploy other backend services or change SMS/billing flags for this visual update.
 
 Reference: https://www.w3.org/WAI/WCAG22/Understanding/reflow.html
+
+
+## Mobile release verified — 2026-10-13 22:10 UTC
+
+- Application release `b0fda19cec3fc03bea3e3ed71f3048b6a51a54cd` passed GitHub quality and Cloudflare Workers Builds.
+- Render connection resolved the earlier signed-out-browser blocker. Office deployment `dep-db7ao92vcj2c73ctr1fg` and Crew deployment `dep-db7ao9l9fdbs73dgn6n0` are live at that application SHA; auto-deploy remains off. Public Office business-branding.css, business-branding.js and office-live.css, plus Crew crew.css, matched release bytes using a release query after deployment.
+- Supabase `mowmatter-business` version 6 and `mowmatter-invoice-delivery` version 3 are ACTIVE. Read-back entrypoints and invoice models matched release source; existing custom authentication and verify_jwt=false were preserved.
+- No API deployment, payment, SMS, auth-policy or customer-record change, and no customer communications sent during this layout release. The 192 local viewport checks remain layout evidence, not physical-device, email-client or complete authenticated transaction certification.
