@@ -156,19 +156,23 @@ test("AI cannot invent service IDs or return prices in sanitized results", () =>
   );
   assert.equal(out.priceCents, undefined);
 });
+const companyId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 const userId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const mockFetch = (role) => async (url) =>
   new Response(
     JSON.stringify(
-      url.includes("/auth/")
-        ? { id: userId }
-        : role === "owner"
-          ? [{ company_id: "company-a", role: "owner" }]
-          : [],
+      url.includes("/rpc/")
+        ? true
+        : url.includes("/auth/")
+          ? { id: userId }
+          : role === "owner"
+            ? [{ company_id: companyId, role: "owner" }]
+            : [],
     ),
     { status: 200 },
   );
 const env = {
+  SUPABASE_SECRET_KEY: "sb_secret_test_only",
   SETUP_AI_ENABLED: "true",
   AI_GATEWAY_API_KEY: "test-only",
   AI_GATEWAY_MODEL: "mock-model",
@@ -179,7 +183,9 @@ async function call(
   authorization = "Bearer test",
   method = "POST",
 ) {
-  const req = Readable.from([JSON.stringify(body)]);
+  const req = Readable.from([
+    JSON.stringify({ company_id: companyId, ...body }),
+  ]);
   req.url = "/api/setup/suggest";
   req.method = method;
   req.headers = { "content-type": "application/json", authorization };
@@ -265,4 +271,65 @@ test("disabled connection and invalid model result fail without changing drafts"
       .status,
     502,
   );
+});
+
+test("owner lookup uses server credentials and the explicitly selected business", async () => {
+  const seen = [];
+  const h = createSetupAI({
+    env,
+    generate: async () => ai(),
+    fetcher: async (url, options) => {
+      seen.push({ url, options });
+      if (url.includes("/auth/"))
+        return new Response(JSON.stringify({ id: userId }));
+      if (url.includes("mow_crew_members"))
+        return new Response(
+          JSON.stringify([{ company_id: companyId, role: "owner" }]),
+        );
+      return new Response("true");
+    },
+  });
+  assert.equal(
+    (await call(h, { profile: profile(), services: catalog().services }))
+      .status,
+    200,
+  );
+  const lookup = seen.find((x) => x.url.includes("mow_crew_members"));
+  assert.equal(lookup.options.headers.apikey, "sb_secret_test_only");
+  assert.equal(lookup.options.headers.Authorization, undefined);
+  assert(lookup.url.includes("company_id=eq." + companyId));
+  assert.equal(
+    seen.find((x) => x.url.includes("/auth/")).options.headers.Authorization,
+    "Bearer test",
+  );
+});
+test("missing company and exhausted monthly credits block model spend", async () => {
+  let calls = 0;
+  const h = createSetupAI({
+    env,
+    generate: async () => {
+      calls++;
+      return ai();
+    },
+    fetcher: async (url) =>
+      url.includes("mow_credit_reserve")
+        ? new Response("false")
+        : mockFetch("owner")(url),
+  });
+  assert.equal(
+    (
+      await call(h, {
+        company_id: null,
+        profile: profile(),
+        services: catalog().services,
+      })
+    ).status,
+    400,
+  );
+  assert.equal(
+    (await call(h, { profile: profile(), services: catalog().services }))
+      .status,
+    429,
+  );
+  assert.equal(calls, 0);
 });

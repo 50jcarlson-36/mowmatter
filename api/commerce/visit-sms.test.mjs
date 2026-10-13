@@ -50,7 +50,7 @@ test("completion status SMS uses server-owned destination and account photo link
       configured: () => true,
       send: async (x) => {
         messages.push(x);
-        return { sid: "vonage:unit" };
+        return { sid: "bird:unit" };
       },
     },
   });
@@ -58,7 +58,7 @@ test("completion status SMS uses server-owned destination and account photo link
   assert.match(messages[0].body, /We finished.*photos:/);
   assert.match(messages[0].body, /customer-account.html\?business=/);
   assert.equal(messages[0].to, "+13865551234");
-  assert.equal(writes[1].body.provider_id, "vonage:unit");
+  assert.equal(writes[1].body.provider_id, "bird:unit");
   const uncertain = createVisitSMS({
     backend,
     transport: {

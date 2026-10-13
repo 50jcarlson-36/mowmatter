@@ -20,4 +20,14 @@ jobs:
         working-directory: api
       - run: npm run check
         working-directory: api
+      - run: npm ci && npm test && npm run build
+        working-directory: office
+      - run: npm ci && npm test && npm run build
+        working-directory: crew
+      - run: npm ci && npm test && npm run build
+        working-directory: marketing/toasts
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno check --no-lock crew/supabase/functions/mowmatter-crew/index.ts crew/supabase/functions/mowmatter-business/index.ts supabase/functions/mowmatter-capture/index.ts supabase/functions/mowmatter-growth/index.ts
       - run: git diff --check

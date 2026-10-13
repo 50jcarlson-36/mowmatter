@@ -11,3 +11,7 @@ routes = [
 [assets]
 directory = "./web/dist"
 html_handling = "auto-trailing-slash"
+
+# Workers Builds uses `wrangler preview` for non-production branches.
+# No separate bindings or variables are needed for public static assets.
+[previews]

@@ -1,0 +1,112 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync, readdirSync } from "node:fs";
+import { PGlite } from "@electric-sql/pglite";
+const cid = "11111111-1111-4111-8111-111111111111",
+  actor = "22222222-2222-4222-8222-222222222222",
+  jid = "33333333-3333-4333-8333-333333333333",
+  iid = "44444444-4444-4444-8444-444444444444";
+async function fixture() {
+  const db = new PGlite();
+  await db.exec(
+    `create role anon;create role authenticated;create role service_role;create table mow_customers(city text);create table mow_crew_jobs(id uuid,city text);create table mow_crew_members(company_id uuid,user_id uuid,role text);create table mow_customer_invoices(id uuid,company_id uuid,job_id uuid,settlement_status text,settlement_note text,settlement_by uuid,settlement_at timestamptz);create table mow_payment_checkouts(company_id uuid,job_id uuid,status text,nonce uuid,session_id text,amount_cents integer);`,
+  );
+  const dir = new URL("../../supabase/migrations/", import.meta.url);
+  const file = readdirSync(dir).find((x) =>
+    x.endsWith("_go_live_code_hardening.sql"),
+  );
+  let sql = readFileSync(new URL(file, dir), "utf8");
+  sql =
+    sql.slice(
+      0,
+      sql.indexOf("CREATE OR REPLACE FUNCTION public.mow_office_action"),
+    ) + "commit;";
+  await db.exec(sql);
+  await db.query("insert into mow_crew_members values($1,$2,$3)", [
+    cid,
+    actor,
+    "owner",
+  ]);
+  await db.query(
+    "insert into mow_customer_invoices(id,company_id,job_id,settlement_status) values($1,$2,$3,$4)",
+    [iid, cid, jid, "open"],
+  );
+  return db;
+}
+async function settle(db, state = "void", user = actor) {
+  return db.query("select mow_invoice_settle($1,$2,$3,$4,$5)", [
+    user,
+    cid,
+    iid,
+    state,
+    "Reviewed in Office",
+  ]);
+}
+test("pending, unknown-session and paid attempts block external settlement", async () => {
+  for (const status of ["pending", "paid"]) {
+    const db = await fixture();
+    try {
+      await db.query(
+        "insert into mow_payment_checkouts(company_id,job_id,status) values($1,$2,$3)",
+        [cid, jid, status],
+      );
+      await assert.rejects(() => settle(db), /Reconcile/);
+      assert.equal(
+        (await db.query("select settlement_status from mow_customer_invoices"))
+          .rows[0].settlement_status,
+        "open",
+      );
+    } finally {
+      await db.close();
+    }
+  }
+});
+test("settling first prevents a later payment claim, and owner scope is enforced", async () => {
+  const db = await fixture();
+  try {
+    await assert.rejects(() => settle(db, "void", jid), /Owner access/);
+    await settle(db);
+    await assert.rejects(
+      () =>
+        db.query(
+          "insert into mow_payment_checkouts(company_id,job_id,status) values($1,$2,$3)",
+          [cid, jid, "pending"],
+        ),
+      /settled or void/,
+    );
+  } finally {
+    await db.close();
+  }
+});
+test("failed reconciled attempt permits settlement and blank cities are rejected", async () => {
+  const db = await fixture();
+  try {
+    await db.query(
+      "insert into mow_payment_checkouts(company_id,job_id,status) values($1,$2,$3)",
+      [cid, jid, "failed"],
+    );
+    await settle(db, "paid_external");
+    for (const city of [null, "", "  "])
+      await assert.rejects(
+        () => db.query("insert into mow_customers(city) values($1)", [city]),
+        /Enter city/,
+      );
+    await db.query("insert into mow_customers(city) values($1)", [
+      "Denver, CO",
+    ]);
+    assert.equal(
+      (await db.query("select city from mow_customers")).rows[0].city,
+      "Denver, CO",
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select has_function_privilege('anon','mow_invoice_settle(uuid,uuid,uuid,text,text)','execute') as access",
+        )
+      ).rows[0].access,
+      false,
+    );
+  } finally {
+    await db.close();
+  }
+});

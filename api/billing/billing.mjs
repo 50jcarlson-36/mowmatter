@@ -1,106 +1,1021 @@
-import {homeownerBilling} from './homeowner.mjs';
-import Stripe from 'stripe';
-import {leadPackageCheckout,fulfillLeadPackage} from '../growth/checkout.mjs';
-import {randomUUID,randomBytes} from 'node:crypto';
-export const FEE_BPS=Object.freeze({starter:350,growth:250,scale:150});
-export function feePlan(a){return a?.paid&&a.status==='active'&&FEE_BPS[a.plan]?a.plan:'starter'}
-export function feeCents(amount,plan){if(!Number.isSafeInteger(amount)||amount<=0)throw Error('Invalid payment amount');return Math.round(amount*(FEE_BPS[plan]||350)/10000)}
-export const PLANS=Object.freeze({growth:{name:'Growth Route',amount:4900,fee_bps:250,price:'price_1UNdfL1fvEozmSlD0Fw44ack'},scale:{name:'Scale & Crew',amount:12900,fee_bps:150,price:'price_1UNdfT1fvEozmSlDxgXTn2gc'}});
-const BASE='https://pzymmsfjgspvzbivzvkx.supabase.co',ACCOUNT='acct_1UNcR11fvEozmSlD';
-const pub='sb_publishable_KQGD-vWlAlJi_Bv7fSaEvA_YLJpIgyu';
-const ORIGINS=new Set(['https://office.mowmatter.com','https://mowmatter-office.onrender.com']);
-const EVENTS=new Set(['checkout.session.completed','checkout.session.async_payment_succeeded','checkout.session.async_payment_failed','customer.subscription.created','customer.subscription.updated','customer.subscription.deleted','invoice.paid','invoice.payment_failed']);
-const CONNECT_SUBSCRIPTIONS=new Set(['customer.subscription.created','customer.subscription.updated','customer.subscription.deleted','invoice.paid','invoice.payment_failed']);
-const CONNECT_ACTIVITY=new Set(['charge.refunded','charge.dispute.created','charge.dispute.updated','charge.dispute.closed','payout.paid','payout.failed']);
-export function subscriptionState(sub){const item=sub.items?.data?.[0],plan=Object.keys(PLANS).find(k=>PLANS[k].price===item?.price?.id)||'starter';return {plan,status:sub.status,paid:plan!=='starter'&&sub.status==='active'&&sub.latest_invoice?.status==='paid',period_end:item?.current_period_end??sub.current_period_end??null,cancel_at_period_end:!!sub.cancel_at_period_end};}
-export async function readRaw(req,max=262144){let size=0,chunks=[];for await(const c of req){size+=c.length;if(size>max)throw Object.assign(Error('Request too large'),{status:413});chunks.push(c)}return Buffer.concat(chunks)}
-export function createBilling({env=process.env,fetcher=fetch,stripeClient}={}){
- const key=env.STRIPE_SECRET_KEY||env.stripe_live_secret_key,dbkey=env.SUPABASE_SECRET_KEY||env.SUPABASE_SERVICE_ROLE_KEY||env.supabase_api_secret_key;
- const connectSigning=env.STRIPE_CONNECT_WEBHOOK_SECRET;
- const connectEnabled=env.STRIPE_CONNECT_ENABLED==='true';
- const signing=env.STRIPE_WEBHOOK_SECRET||env.stripe_webhook_secret;
- const stripe=stripeClient||(key?new Stripe(key,{apiVersion:'2026-08-26.dahlia',maxNetworkRetries:2,timeout:12000}):null);
- let readiness=null,readinessAt=0;
- async function db(path,method='GET',body,prefer){if(!dbkey)throw Object.assign(Error('Billing database is not configured'),{status:503});const r=await fetcher(BASE+'/rest/v1/'+path,{method,headers:{apikey:dbkey,...(dbkey.startsWith('eyJ')?{Authorization:'Bearer '+dbkey}:{}),'Content-Type':'application/json',...(prefer?{Prefer:prefer}:{})},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(12000)});if(!r.ok)throw Object.assign(Error('Billing record could not be saved'),{status:503});const raw=await r.text();return raw?JSON.parse(raw):null;}
- async function ready(){if(readiness&&Date.now()-readinessAt<60000)return readiness;let verified=false,databaseVerified=false;try{if(stripe){const account=await stripe.accounts.retrieve();verified=account.id===ACCOUNT&&account.charges_enabled===true;}}catch{}try{if(dbkey){await db('mow_billing_accounts?select=company_id&limit=1');databaseVerified=true;}}catch{}readiness={checkout_enabled:verified&&databaseVerified&&connectEnabled&&!!signing,stripe_account_verified:verified,database_verified:databaseVerified,stripe_key_configured:!!key,webhook_configured:!!signing,database_key_configured:!!dbkey,plans:Object.entries(PLANS).map(([id,p])=>({id,name:p.name,amount_cents:p.amount,fee_percent:p.fee_bps/100})),connect_onboarding_enabled:verified&&databaseVerified&&connectEnabled,homeowner_payments_enabled:verified&&databaseVerified&&connectEnabled&&!!connectSigning,quoting_addon_enabled:false};readinessAt=Date.now();return readiness;}
- async function owner(req,companyId){const token=req.headers.authorization;if(!token?.startsWith('Bearer '))throw Object.assign(Error('Sign in to Office'),{status:401});const r=await fetcher(BASE+'/auth/v1/user',{headers:{apikey:pub,Authorization:token},signal:AbortSignal.timeout(12000)});if(!r.ok)throw Object.assign(Error('Sign in again'),{status:401});const user=await r.json();const filter=companyId?'&company_id=eq.'+encodeURIComponent(companyId):'';const rows=await db('mow_crew_members?select=company_id,role&user_id=eq.'+encodeURIComponent(user.id)+filter);const member=rows.find(x=>x.role==='owner');if(!member)throw Object.assign(Error('Business owner access required'),{status:403});return {user,cid:member.company_id};}
- async function customerInvoice(req,body){
-  const valid=v=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
-  if(!valid(body.company_id)||!valid(body.customer_id))throw Object.assign(Error('Invalid customer link'),{status:400});
-  const auth=req.headers.authorization;if(!auth?.startsWith('Bearer '))throw Object.assign(Error('Sign in to your account'),{status:401});
-  const r=await fetcher(BASE+'/auth/v1/user',{headers:{apikey:pub,Authorization:auth},signal:AbortSignal.timeout(12000)});if(!r.ok)throw Object.assign(Error('Sign in again'),{status:401});const user=await r.json();
-  if(!user.email_confirmed_at)throw Object.assign(Error('Verify your account email'),{status:401});
-  const customers=await db('mow_customers?select=id,email&company_id=eq.'+body.company_id+'&id=eq.'+body.customer_id);
-  if(!customers[0]?.email||customers[0].email.toLowerCase()!==user.email?.toLowerCase())throw Object.assign(Error('Customer access denied'),{status:403});
-  const invoices=await db('mow_customer_invoices?select=id,job_id,amount_cents,settlement_status&company_id=eq.'+body.company_id+'&customer_id=eq.'+body.customer_id+(body.invoice_id?'&id=eq.'+encodeURIComponent(body.invoice_id):''));
-  if(body.invoice_id&&!invoices[0])throw Object.assign(Error('Invoice unavailable'),{status:404});
-  return {cid:body.company_id,user,invoices};
- }
- async function account(cid){return (await db('mow_billing_accounts?select=*&company_id=eq.'+encodeURIComponent(cid)))[0];}
- async function ensureCustomer(cid){let a=await account(cid);if(a?.customer_id?.startsWith('acct_'))return a;if(a?.customer_id)throw Object.assign(Error('Contact support to migrate your existing billing account'),{status:409});await db('mow_billing_accounts','POST',{company_id:cid},'resolution=ignore-duplicates,return=minimal');const company=(await db('mow_crew_companies?select=name&id=eq.'+encodeURIComponent(cid)))[0];const c=await stripe.v2.core.accounts.create({display_name:company?.name||'Lawn care business',identity:{country:'US'},dashboard:'full',defaults:{currency:'usd',responsibilities:{fees_collector:'stripe',losses_collector:'stripe'}},configuration:{customer:{},merchant:{capabilities:{card_payments:{requested:true}}}},metadata:{mowmatter_company:cid}},{idempotencyKey:'mowmatter-connect-'+cid});await db('mow_billing_accounts?company_id=eq.'+encodeURIComponent(cid),'PATCH',{customer_id:c.id},'return=minimal');return account(cid);}
- async function connected(a){if(!a?.customer_id?.startsWith('acct_'))return null;const c=await stripe.v2.core.accounts.retrieve(a.customer_id,{include:['configuration.merchant','requirements']});return {account_id:c.id,payments_ready:c.configuration?.merchant?.capabilities?.card_payments?.status==='active',payouts_ready:c.configuration?.merchant?.capabilities?.stripe_balance?.payouts?.status==='active',requirements:c.requirements?.summary?.minimum_deadline?.status||'Check Stripe for verification requirements'};}
- async function accounting(a){const c=await connected(a);if(!c)return {connection:null,transactions:[],payouts:[],balances:null};const opts={stripeAccount:c.account_id};const [charges,payouts,balance]=await Promise.all([stripe.charges.list({limit:50,expand:['data.balance_transaction']},opts),stripe.payouts.list({limit:20},opts),stripe.balance.retrieve({},opts)]);return {connection:c,balances:{available:balance.available,pending:balance.pending},transactions:charges.data.map(x=>({id:x.id,date:x.created,amount_cents:x.amount,currency:x.currency,status:x.refunded?'refunded':x.paid?'paid':x.status,refunded_cents:x.amount_refunded,platform_fee_cents:x.application_fee_amount||0,total_fee_cents:typeof x.balance_transaction==='object'?x.balance_transaction?.fee:null,net_cents:typeof x.balance_transaction==='object'?x.balance_transaction?.net:null,description:x.description||'Customer payment'})),payouts:payouts.data.map(x=>({id:x.id,amount_cents:x.amount,currency:x.currency,status:x.status,arrival_date:x.arrival_date}))};}
+import { subscriptionRecovery } from "./subscription-recovery.mjs";
+import { paymentRecovery } from "./recovery.mjs";
+import { homeownerBilling } from "./homeowner.mjs";
+import Stripe from "stripe";
+import {
+  leadPackageCheckout,
+  fulfillLeadPackage,
+} from "../growth/checkout.mjs";
+import { randomUUID } from "node:crypto";
+export const FEE_BPS = Object.freeze({ starter: 350, growth: 250, scale: 150 });
+export function feePlan(a) {
+  return a?.paid && a.status === "active" && FEE_BPS[a.plan]
+    ? a.plan
+    : "starter";
+}
+export function feeCents(amount, plan) {
+  if (!Number.isSafeInteger(amount) || amount <= 0)
+    throw Error("Invalid payment amount");
+  return Math.round((amount * (FEE_BPS[plan] || 350)) / 10000);
+}
+export const PLANS = Object.freeze({
+  growth: {
+    name: "Growth Route",
+    amount: 4900,
+    fee_bps: 250,
+    price: "price_1UNdfL1fvEozmSlD0Fw44ack",
+  },
+  scale: {
+    name: "Scale & Crew",
+    amount: 12900,
+    fee_bps: 150,
+    price: "price_1UNdfT1fvEozmSlDxgXTn2gc",
+  },
+});
+const BASE = "https://pzymmsfjgspvzbivzvkx.supabase.co",
+  ACCOUNT = "acct_1UNcR11fvEozmSlD";
+const pub = "sb_publishable_KQGD-vWlAlJi_Bv7fSaEvA_YLJpIgyu";
+const ORIGINS = new Set([
+  "https://office.mowmatter.com",
+  "https://mowmatter-office.onrender.com",
+]);
+const EVENTS = new Set([
+  "checkout.session.completed",
+  "checkout.session.async_payment_succeeded",
+  "checkout.session.async_payment_failed",
+  "customer.subscription.created",
+  "customer.subscription.updated",
+  "customer.subscription.deleted",
+  "invoice.paid",
+  "invoice.payment_failed",
+]);
+const CONNECT_SUBSCRIPTIONS = new Set([
+  "customer.subscription.created",
+  "customer.subscription.updated",
+  "customer.subscription.deleted",
+  "invoice.paid",
+  "invoice.payment_failed",
+]);
+const CONNECT_ACTIVITY = new Set([
+  "charge.refunded",
+  "charge.dispute.created",
+  "charge.dispute.updated",
+  "charge.dispute.closed",
+  "payout.paid",
+  "payout.failed",
+]);
+export function subscriptionState(sub) {
+  const item = sub.items?.data?.find((item) =>
+      Object.values(PLANS).some((plan) => plan.price === item.price?.id),
+    ),
+    plan =
+      Object.keys(PLANS).find((k) => PLANS[k].price === item?.price?.id) ||
+      "starter";
+  return {
+    plan,
+    status: sub.status,
+    paid:
+      plan !== "starter" &&
+      sub.status === "active" &&
+      sub.latest_invoice?.status === "paid",
+    period_end: item?.current_period_end ?? sub.current_period_end ?? null,
+    cancel_at_period_end: !!sub.cancel_at_period_end,
+  };
+}
+export async function readRaw(req, max = 262144) {
+  let size = 0,
+    chunks = [];
+  for await (const c of req) {
+    size += c.length;
+    if (size > max)
+      throw Object.assign(Error("Request too large"), { status: 413 });
+    chunks.push(c);
+  }
+  return Buffer.concat(chunks);
+}
+export function createBilling({
+  env = process.env,
+  fetcher = fetch,
+  stripeClient,
+} = {}) {
+  const key = env.STRIPE_SECRET_KEY || env.stripe_live_secret_key,
+    dbkey =
+      env.SUPABASE_SECRET_KEY ||
+      env.SUPABASE_SERVICE_ROLE_KEY ||
+      env.supabase_api_secret_key;
+  if (env.STRIPE_MODE && !["live", "sandbox"].includes(env.STRIPE_MODE))
+    throw Error("Choose STRIPE_MODE live or sandbox");
+  const live = env.STRIPE_MODE !== "sandbox";
+  const platformAccount =
+    env.STRIPE_PLATFORM_ACCOUNT_ID || (live ? ACCOUNT : null);
+  const prices = {
+    growth: env.STRIPE_GROWTH_PRICE_ID || (live ? PLANS.growth.price : null),
+    scale: env.STRIPE_SCALE_PRICE_ID || (live ? PLANS.scale.price : null),
+  };
+  const portalConfiguration =
+    env.STRIPE_PORTAL_CONFIGURATION_ID ||
+    (live ? "bpc_1UNdtv1fvEozmSlD6FhdOwa1" : null);
+  const connectSigning = env.STRIPE_CONNECT_WEBHOOK_SECRET;
+  const connectEnabled = env.STRIPE_CONNECT_ENABLED === "true";
+  const signing = env.STRIPE_WEBHOOK_SECRET || env.stripe_webhook_secret;
+  const stripe =
+    stripeClient ||
+    (key
+      ? new Stripe(key, {
+          apiVersion: "2026-08-26.dahlia",
+          maxNetworkRetries: 2,
+          timeout: 12000,
+        })
+      : null);
+  let readiness = null,
+    readinessAt = 0;
+  async function db(path, method = "GET", body, prefer) {
+    if (!dbkey)
+      throw Object.assign(Error("Billing database is not configured"), {
+        status: 503,
+      });
+    const r = await fetcher(BASE + "/rest/v1/" + path, {
+      method,
+      headers: {
+        apikey: dbkey,
+        ...(dbkey.startsWith("eyJ")
+          ? { Authorization: "Bearer " + dbkey }
+          : {}),
+        "Content-Type": "application/json",
+        ...(prefer ? { Prefer: prefer } : {}),
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(12000),
+    });
+    if (!r.ok)
+      throw Object.assign(Error("Billing record could not be saved"), {
+        status: 503,
+      });
+    const raw = await r.text();
+    return raw ? JSON.parse(raw) : null;
+  }
+  async function ready() {
+    if (readiness && Date.now() - readinessAt < 60000) return readiness;
+    let verified = false,
+      databaseVerified = false;
+    try {
+      if (stripe) {
+        const account = await stripe.accounts.retrieve();
+        verified =
+          (!key || (/^(sk|rk)_test_/.test(key) ? !live : live)) &&
+          !!platformAccount &&
+          account.id === platformAccount &&
+          account.charges_enabled === true;
+      }
+    } catch {}
+    try {
+      if (dbkey) {
+        await db("mow_billing_accounts?select=company_id&limit=1");
+        databaseVerified = true;
+      }
+    } catch {}
+    readiness = {
+      checkout_enabled:
+        verified &&
+        databaseVerified &&
+        connectEnabled &&
+        !!signing &&
+        !!prices.growth &&
+        !!prices.scale,
+      stripe_account_verified: verified,
+      database_verified: databaseVerified,
+      stripe_key_configured: !!key,
+      webhook_configured: !!signing,
+      database_key_configured: !!dbkey,
+      plans: Object.entries(PLANS).map(([id, p]) => ({
+        id,
+        name: p.name,
+        amount_cents: p.amount,
+        fee_percent: p.fee_bps / 100,
+      })),
+      connect_onboarding_enabled:
+        verified && databaseVerified && connectEnabled,
+      homeowner_payments_enabled:
+        verified && databaseVerified && connectEnabled && !!connectSigning,
+      quoting_addon_enabled: false,
+    };
+    readinessAt = Date.now();
+    return readiness;
+  }
+  async function owner(req, companyId) {
+    const token = req.headers.authorization;
+    if (!token?.startsWith("Bearer "))
+      throw Object.assign(Error("Sign in to Office"), { status: 401 });
+    const r = await fetcher(BASE + "/auth/v1/user", {
+      headers: { apikey: pub, Authorization: token },
+      signal: AbortSignal.timeout(12000),
+    });
+    if (!r.ok) throw Object.assign(Error("Sign in again"), { status: 401 });
+    const user = await r.json();
+    if (
+      typeof companyId !== "string" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        companyId,
+      )
+    )
+      throw Object.assign(Error("Choose a valid business"), { status: 400 });
+    const filter = "&company_id=eq." + encodeURIComponent(companyId);
+    const rows = await db(
+      "mow_crew_members?select=company_id,role&user_id=eq." +
+        encodeURIComponent(user.id) +
+        filter,
+    );
+    const member = rows.find((x) => x.role === "owner");
+    if (!member)
+      throw Object.assign(Error("Business owner access required"), {
+        status: 403,
+      });
+    return { user, cid: member.company_id };
+  }
+  async function customerInvoice(req, body) {
+    const valid = (v) =>
+      typeof v === "string" &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+    if (!valid(body.company_id) || !valid(body.customer_id))
+      throw Object.assign(Error("Invalid customer link"), { status: 400 });
+    const auth = req.headers.authorization;
+    if (!auth?.startsWith("Bearer "))
+      throw Object.assign(Error("Sign in to your account"), { status: 401 });
+    const r = await fetcher(BASE + "/auth/v1/user", {
+      headers: { apikey: pub, Authorization: auth },
+      signal: AbortSignal.timeout(12000),
+    });
+    if (!r.ok) throw Object.assign(Error("Sign in again"), { status: 401 });
+    const user = await r.json();
+    if (!user.email_confirmed_at)
+      throw Object.assign(Error("Verify your account email"), { status: 401 });
+    const customers = await db(
+      "mow_customers?select=id,email&company_id=eq." +
+        body.company_id +
+        "&id=eq." +
+        body.customer_id,
+    );
+    if (
+      !customers[0]?.email ||
+      customers[0].email.toLowerCase() !== user.email?.toLowerCase()
+    )
+      throw Object.assign(Error("Customer access denied"), { status: 403 });
+    const invoices = await db(
+      "mow_customer_invoices?select=id,job_id,amount_cents,settlement_status&company_id=eq." +
+        body.company_id +
+        "&customer_id=eq." +
+        body.customer_id +
+        (body.invoice_id
+          ? "&id=eq." + encodeURIComponent(body.invoice_id)
+          : ""),
+    );
+    if (body.invoice_id && !invoices[0])
+      throw Object.assign(Error("Invoice unavailable"), { status: 404 });
+    return { cid: body.company_id, user, invoices };
+  }
+  async function account(cid) {
+    return (
+      await db(
+        "mow_billing_accounts?select=*&company_id=eq." +
+          encodeURIComponent(cid),
+      )
+    )[0];
+  }
+  async function ensureCustomer(cid) {
+    let a = await account(cid);
+    if (a?.customer_id?.startsWith("acct_")) return a;
+    if (a?.customer_id)
+      throw Object.assign(
+        Error("Contact support to migrate your existing billing account"),
+        { status: 409 },
+      );
+    await db(
+      "mow_billing_accounts",
+      "POST",
+      { company_id: cid },
+      "resolution=ignore-duplicates,return=minimal",
+    );
+    const company = (
+      await db(
+        "mow_crew_companies?select=name&id=eq." + encodeURIComponent(cid),
+      )
+    )[0];
+    const c = await stripe.v2.core.accounts.create(
+      {
+        display_name: company?.name || "Lawn care business",
+        identity: { country: "US" },
+        dashboard: "full",
+        defaults: {
+          currency: "usd",
+          responsibilities: {
+            fees_collector: "stripe",
+            losses_collector: "stripe",
+          },
+        },
+        configuration: {
+          customer: {},
+          merchant: { capabilities: { card_payments: { requested: true } } },
+        },
+        metadata: { mowmatter_company: cid },
+      },
+      { idempotencyKey: "mowmatter-connect-" + cid },
+    );
+    await db(
+      "mow_billing_accounts?company_id=eq." + encodeURIComponent(cid),
+      "PATCH",
+      { customer_id: c.id },
+      "return=minimal",
+    );
+    return account(cid);
+  }
+  async function connected(a) {
+    if (!a?.customer_id?.startsWith("acct_")) return null;
+    const c = await stripe.v2.core.accounts.retrieve(a.customer_id, {
+      include: ["configuration.merchant", "requirements"],
+    });
+    return {
+      account_id: c.id,
+      payments_ready:
+        c.configuration?.merchant?.capabilities?.card_payments?.status ===
+        "active",
+      payouts_ready:
+        c.configuration?.merchant?.capabilities?.stripe_balance?.payouts
+          ?.status === "active",
+      requirements:
+        c.requirements?.summary?.minimum_deadline?.status ||
+        "Check Stripe for verification requirements",
+    };
+  }
+  async function accounting(a) {
+    const c = await connected(a);
+    if (!c)
+      return {
+        connection: null,
+        transactions: [],
+        payouts: [],
+        balances: null,
+      };
+    const opts = { stripeAccount: c.account_id };
+    const [charges, payouts, balance] = await Promise.all([
+      stripe.charges.list(
+        { limit: 50, expand: ["data.balance_transaction"] },
+        opts,
+      ),
+      stripe.payouts.list({ limit: 20 }, opts),
+      stripe.balance.retrieve({}, opts),
+    ]);
+    return {
+      connection: c,
+      balances: { available: balance.available, pending: balance.pending },
+      transactions: charges.data.map((x) => ({
+        id: x.id,
+        date: x.created,
+        amount_cents: x.amount,
+        currency: x.currency,
+        status: x.refunded ? "refunded" : x.paid ? "paid" : x.status,
+        refunded_cents: x.amount_refunded,
+        platform_fee_cents: x.application_fee_amount || 0,
+        total_fee_cents:
+          typeof x.balance_transaction === "object"
+            ? x.balance_transaction?.fee
+            : null,
+        net_cents:
+          typeof x.balance_transaction === "object"
+            ? x.balance_transaction?.net
+            : null,
+        description: x.description || "Customer payment",
+      })),
+      payouts: payouts.data.map((x) => ({
+        id: x.id,
+        amount_cents: x.amount,
+        currency: x.currency,
+        status: x.status,
+        arrival_date: x.arrival_date,
+      })),
+    };
+  }
 
- const homeowner=homeownerBilling({db,stripe,ready,connected,feePlan,feeBps:FEE_BPS});
- async function sync(event){if(!EVENTS.has(event.type))return;const o=event.data.object;let sid=o.object==='subscription'?o.id:o.object==='checkout.session'?o.subscription:o.parent?.subscription_details?.subscription||o.subscription;if(typeof sid==='object')sid=sid?.id;if(!sid)return;const sub=await stripe.subscriptions.retrieve(sid,{expand:['latest_invoice']});const customer=(typeof sub.customer_account==='string'?sub.customer_account:sub.customer_account?.id)||(typeof sub.customer==='string'?sub.customer:sub.customer?.id);const rows=await db('mow_billing_accounts?select=company_id&customer_id=eq.'+encodeURIComponent(customer));if(!rows.length)return;const s=subscriptionState(sub);await db('rpc/mow_billing_apply','POST',{eid:event.id,etype:event.type,ec:event.created,customer,subscription:sub.id,p:s.plan,s:s.status,is_paid:s.paid,pend:s.period_end,cancel_end:s.cancel_at_period_end});}
- return async function handle(req,res){const pathname=new URL(req.url,'http://localhost').pathname;if(!pathname.startsWith('/api/billing'))return false;
- const headers={'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Vary':'Origin'};const send=(status,data)=>{res.writeHead(status,headers);res.end(JSON.stringify(data));};
- try{
-  if(pathname==='/api/billing/connect/webhook'){if(req.method!=='POST'){send(405,{error:'POST required'});return true}if(!stripe||!connectSigning||!dbkey){send(503,{error:'Connect webhook is not configured'});return true}let event;try{event=stripe.webhooks.constructEvent(await readRaw(req),req.headers['stripe-signature'],connectSigning)}catch{send(400,{error:'Invalid webhook signature'});return true}if(!event.livemode||!event.account){send(400,{error:'Wrong Stripe environment or missing account'});return true}if(['checkout.session.completed','checkout.session.async_payment_succeeded','checkout.session.async_payment_failed'].includes(event.type)||CONNECT_SUBSCRIPTIONS.has(event.type)){
- const accounts=await db('mow_billing_accounts?select=company_id&customer_id=eq.'+encodeURIComponent(event.account));
- if(accounts[0]){
-  if(CONNECT_SUBSCRIPTIONS.has(event.type)){await homeowner.sync(event,accounts[0].company_id);}
-  else {const session=await stripe.checkout.sessions.retrieve(event.data.object.id,{},{stripeAccount:event.account});
-   if(session.mode==='subscription'){await homeowner.sync({...event,data:{object:session}},accounts[0].company_id);}
-   else {const payments=await db('mow_payment_checkouts?select=job_id,amount_cents&company_id=eq.'+accounts[0].company_id+'&session_id=eq.'+encodeURIComponent(session.id));
-    if(payments[0]){if(session.currency!=='usd'||session.amount_total!==payments[0].amount_cents||session.metadata?.mowmatter_job!==payments[0].job_id)throw Object.assign(Error('Payment record mismatch'),{status:409});
-    await db('rpc/mow_payment_event','POST',{eid:event.id,etype:event.type,ec:event.created,cid:accounts[0].company_id,sid:session.id,state:session.payment_status==='paid'?'paid':event.type==='checkout.session.async_payment_failed'?'failed':'pending'});}
-   }
+  const recovery = paymentRecovery({ db, stripe });
+  const savedSubscription = subscriptionRecovery({ db, stripe });
+  const homeowner = homeownerBilling({
+    db,
+    stripe,
+    ready,
+    connected,
+    feePlan,
+    feeBps: FEE_BPS,
+    savedSubscription,
+  });
+  async function sync(event) {
+    if (!EVENTS.has(event.type)) return;
+    const o = event.data.object;
+    let sid =
+      o.object === "subscription"
+        ? o.id
+        : o.object === "checkout.session"
+          ? o.subscription
+          : o.parent?.subscription_details?.subscription || o.subscription;
+    if (typeof sid === "object") sid = sid?.id;
+    if (!sid) return;
+    const sub = await stripe.subscriptions.retrieve(sid, {
+      expand: ["latest_invoice"],
+    });
+    const customer =
+      (typeof sub.customer_account === "string"
+        ? sub.customer_account
+        : sub.customer_account?.id) ||
+      (typeof sub.customer === "string" ? sub.customer : sub.customer?.id);
+    const rows = await db(
+      "mow_billing_accounts?select=company_id&customer_id=eq." +
+        encodeURIComponent(customer),
+    );
+    if (!rows.length)
+      throw Object.assign(Error("Subscription mapping is pending"), {
+        status: 503,
+      });
+    const normalized = {
+      ...sub,
+      items: {
+        ...sub.items,
+        data: sub.items?.data?.map((x) => ({
+          ...x,
+          price: {
+            ...x.price,
+            id: Object.keys(prices).find((k) => prices[k] === x.price?.id)
+              ? PLANS[
+                  Object.keys(prices).find((k) => prices[k] === x.price?.id)
+                ].price
+              : x.price?.id,
+          },
+        })),
+      },
+    };
+    const s = subscriptionState(normalized);
+    await db("rpc/mow_billing_apply", "POST", {
+      eid: event.id,
+      etype: event.type,
+      ec: event.created,
+      customer,
+      subscription: sub.id,
+      p: s.plan,
+      s: s.status,
+      is_paid: s.paid,
+      pend: s.period_end,
+      cancel_end: s.cancel_at_period_end,
+    });
+    await db("rpc/mow_billing_entitlements", "POST", {
+      cid: rows[0].company_id,
+      eid: event.id,
+      ec: event.created,
+      addons: env.STRIPE_CREW_ADDON_PRICE_ID
+        ? sub.items.data
+            .filter((x) => x.price?.id === env.STRIPE_CREW_ADDON_PRICE_ID)
+            .reduce((n, x) => n + (x.quantity || 0), 0)
+        : 0,
+    });
   }
- }
- }else if(CONNECT_ACTIVITY.has(event.type)){
- const accounts=await db('mow_billing_accounts?select=company_id&customer_id=eq.'+encodeURIComponent(event.account));
- if(accounts[0]){const o=event.data.object;await db('mow_payment_activity?on_conflict=event_id','POST',{
- event_id:event.id,company_id:accounts[0].company_id,account_id:event.account,event_type:event.type,
- object_id:o.id,amount_cents:event.type==='charge.refunded'?o.amount_refunded:o.amount,
- currency:o.currency,status:o.status||(event.type==='charge.refunded'?'refunded':'unknown'),event_created:event.created
- },'resolution=ignore-duplicates,return=minimal');}
- }send(200,{received:true});return true;}
-  if(pathname==='/api/billing/webhook'){if(req.method!=='POST'){send(405,{error:'POST required'});return true}if(!stripe||!signing||!dbkey){send(503,{error:'Webhook is not configured'});return true}let event;try{event=stripe.webhooks.constructEvent(await readRaw(req),req.headers['stripe-signature'],signing)}catch(e){send(e.status||400,{error:'Invalid webhook signature or payload'});return true}if(event.livemode!==true){send(400,{error:'Wrong Stripe environment'});return true}if(!await fulfillLeadPackage(event,{stripe,db}))await sync(event);send(200,{received:true});return true;}
-  const origin=req.headers.origin;if(!ORIGINS.has(origin)){send(403,{error:'Origin not allowed'});return true}headers['Access-Control-Allow-Origin']=origin;
-  if(req.method==='OPTIONS'){headers['Access-Control-Allow-Headers']='authorization,content-type';headers['Access-Control-Allow-Methods']='GET,POST,OPTIONS';send(204,null);return true}
-  if(pathname==='/api/billing/config'&&req.method==='GET'){send(200,await ready());return true}
-  if(req.method!=='POST'){send(405,{error:'POST required'});return true}
-  let body;try{body=JSON.parse((await readRaw(req,4096)).toString())}catch(e){throw Object.assign(Error('Invalid request'),{status:e.status||400})}
-  const customerRoute=['/api/billing/invoice-payment','/api/billing/invoice-status','/api/billing/recurring-status','/api/billing/recurring-checkout','/api/billing/recurring-portal'].includes(pathname);
-  const access=customerRoute?await customerInvoice(req,body):await owner(req,body.company_id);
-  const {cid,user}=access;let a=await account(cid);
-  if(pathname.startsWith('/api/billing/recurring-')||pathname==='/api/billing/prepare-recurring'){send(200,await homeowner.handle({pathname,body,cid,user,account:a,customerRoute}));return true;}
-  if(pathname==='/api/billing/invoice-status'){
-   const records=access.invoices.length?await db('mow_payment_checkouts?select=job_id,status,amount_cents&company_id=eq.'+cid+'&job_id=in.('+access.invoices.map(i=>i.job_id).join(',')+')'):[];
-   const jobs=access.invoices.length?await db('mow_crew_jobs?select=id,plan_id&company_id=eq.'+cid+'&customer_id=eq.'+body.customer_id+'&id=in.('+access.invoices.map(i=>i.job_id).join(',')+')'):[];const recurring=await db('mow_homeowner_subscriptions?select=plan_id&company_id=eq.'+cid+'&customer_id=eq.'+body.customer_id);
-   send(200,{invoices:access.invoices.map(i=>({id:i.id,status:i.settlement_status==='paid_external'?'paid_external':i.settlement_status==='void'?'void':recurring.some(s=>s.plan_id===jobs.find(j=>j.id===i.job_id)?.plan_id)?'recurring':records.find(p=>p.job_id===i.job_id)?.status||'unpaid'})),payments_enabled:(await ready()).homeowner_payments_enabled&&(await connected(a))?.payments_ready===true&&(await connected(a))?.payouts_ready===true});return true;
-  }
-  if(pathname==='/api/billing/invoice-payment'){
-   if(!body.invoice_id||access.invoices.length!==1)throw Object.assign(Error('Choose one invoice'),{status:400});
-   if(access.invoices[0].settlement_status&&access.invoices[0].settlement_status!=='open')throw Object.assign(Error('This invoice is settled or void'),{status:409});body.job_id=access.invoices[0].job_id;
-  }
+  return async function handle(req, res) {
+    const pathname = new URL(req.url, "http://localhost").pathname;
+    if (!pathname.startsWith("/api/billing")) return false;
+    const headers = {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      Vary: "Origin",
+    };
+    const send = (status, data) => {
+      res.writeHead(status, headers);
+      res.end(JSON.stringify(data));
+    };
+    try {
+      if (pathname === "/api/billing/connect/webhook") {
+        if (req.method !== "POST") {
+          send(405, { error: "POST required" });
+          return true;
+        }
+        if (!stripe || !connectSigning || !dbkey) {
+          send(503, { error: "Connect webhook is not configured" });
+          return true;
+        }
+        let event;
+        try {
+          event = stripe.webhooks.constructEvent(
+            await readRaw(req),
+            req.headers["stripe-signature"],
+            connectSigning,
+          );
+        } catch {
+          send(400, { error: "Invalid webhook signature" });
+          return true;
+        }
+        if (event.livemode !== live || !event.account) {
+          send(400, { error: "Wrong Stripe environment or missing account" });
+          return true;
+        }
+        await recovery.receive(event);
+        if (
+          [
+            "checkout.session.completed",
+            "checkout.session.async_payment_succeeded",
+            "checkout.session.async_payment_failed",
+          ].includes(event.type) ||
+          CONNECT_SUBSCRIPTIONS.has(event.type)
+        ) {
+          const accounts = await db(
+            "mow_billing_accounts?select=company_id&customer_id=eq." +
+              encodeURIComponent(event.account),
+          );
+          if (!accounts[0])
+            throw Object.assign(Error("Connected account mapping is pending"), {
+              status: 503,
+            });
+          if (accounts[0]) {
+            if (CONNECT_SUBSCRIPTIONS.has(event.type)) {
+              await homeowner.sync(event, accounts[0].company_id);
+            } else {
+              const session = await stripe.checkout.sessions.retrieve(
+                event.data.object.id,
+                {},
+                { stripeAccount: event.account },
+              );
+              if (session.mode === "subscription") {
+                await homeowner.sync(
+                  { ...event, data: { object: session } },
+                  accounts[0].company_id,
+                );
+              } else {
+                await recovery.apply(event, session, accounts[0].company_id);
+              }
+            }
+          }
+        } else if (CONNECT_ACTIVITY.has(event.type)) {
+          const accounts = await db(
+            "mow_billing_accounts?select=company_id&customer_id=eq." +
+              encodeURIComponent(event.account),
+          );
+          if (accounts[0]) {
+            const o = event.data.object;
+            await db(
+              "mow_payment_activity?on_conflict=event_id",
+              "POST",
+              {
+                event_id: event.id,
+                company_id: accounts[0].company_id,
+                account_id: event.account,
+                event_type: event.type,
+                object_id: o.id,
+                amount_cents:
+                  event.type === "charge.refunded"
+                    ? o.amount_refunded
+                    : o.amount,
+                currency: o.currency,
+                status:
+                  o.status ||
+                  (event.type === "charge.refunded" ? "refunded" : "unknown"),
+                event_created: event.created,
+              },
+              "resolution=ignore-duplicates,return=minimal",
+            );
+          }
+        }
+        await recovery.finish(event);
+        send(200, { received: true });
+        return true;
+      }
+      if (pathname === "/api/billing/webhook") {
+        if (req.method !== "POST") {
+          send(405, { error: "POST required" });
+          return true;
+        }
+        if (!stripe || !signing || !dbkey) {
+          send(503, { error: "Webhook is not configured" });
+          return true;
+        }
+        let event;
+        try {
+          event = stripe.webhooks.constructEvent(
+            await readRaw(req),
+            req.headers["stripe-signature"],
+            signing,
+          );
+        } catch (e) {
+          send(e.status || 400, {
+            error: "Invalid webhook signature or payload",
+          });
+          return true;
+        }
+        if (event.livemode !== live) {
+          send(400, { error: "Wrong Stripe environment" });
+          return true;
+        }
+        await recovery.receive(event);
+        if (!(await fulfillLeadPackage(event, { stripe, db, live })))
+          await sync(event);
+        await recovery.finish(event);
+        send(200, { received: true });
+        return true;
+      }
+      const origin = req.headers.origin;
+      if (!ORIGINS.has(origin)) {
+        send(403, { error: "Origin not allowed" });
+        return true;
+      }
+      headers["Access-Control-Allow-Origin"] = origin;
+      if (req.method === "OPTIONS") {
+        headers["Access-Control-Allow-Headers"] = "authorization,content-type";
+        headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS";
+        send(204, null);
+        return true;
+      }
+      if (pathname === "/api/billing/config" && req.method === "GET") {
+        send(200, await ready());
+        return true;
+      }
+      if (req.method !== "POST") {
+        send(405, { error: "POST required" });
+        return true;
+      }
+      let body;
+      try {
+        body = JSON.parse((await readRaw(req, 4096)).toString());
+      } catch (e) {
+        throw Object.assign(Error("Invalid request"), {
+          status: e.status || 400,
+        });
+      }
+      const customerRoute = [
+        "/api/billing/invoice-payment",
+        "/api/billing/invoice-status",
+        "/api/billing/recurring-status",
+        "/api/billing/recurring-checkout",
+        "/api/billing/recurring-portal",
+      ].includes(pathname);
+      const access = customerRoute
+        ? await customerInvoice(req, body)
+        : await owner(req, body.company_id);
+      const { cid, user } = access;
+      let a = await account(cid);
+      if (
+        pathname.startsWith("/api/billing/recurring-") ||
+        pathname === "/api/billing/prepare-recurring"
+      ) {
+        send(
+          200,
+          await homeowner.handle({
+            pathname,
+            body,
+            cid,
+            user,
+            account: a,
+            customerRoute,
+          }),
+        );
+        return true;
+      }
+      if (pathname === "/api/billing/invoice-status") {
+        const records = access.invoices.length
+          ? await db(
+              "mow_payment_checkouts?select=job_id,status,amount_cents&company_id=eq." +
+                cid +
+                "&job_id=in.(" +
+                access.invoices.map((i) => i.job_id).join(",") +
+                ")",
+            )
+          : [];
+        const jobs = access.invoices.length
+          ? await db(
+              "mow_crew_jobs?select=id,plan_id&company_id=eq." +
+                cid +
+                "&customer_id=eq." +
+                body.customer_id +
+                "&id=in.(" +
+                access.invoices.map((i) => i.job_id).join(",") +
+                ")",
+            )
+          : [];
+        const recurring = await db(
+          "mow_homeowner_subscriptions?select=plan_id&company_id=eq." +
+            cid +
+            "&customer_id=eq." +
+            body.customer_id,
+        );
+        const configuration = await ready();
+        const connection = configuration.homeowner_payments_enabled
+          ? await connected(a)
+          : null;
+        send(200, {
+          invoices: access.invoices.map((i) => ({
+            id: i.id,
+            status:
+              i.settlement_status === "paid_external"
+                ? "paid_external"
+                : i.settlement_status === "void"
+                  ? "void"
+                  : recurring.some(
+                        (s) =>
+                          s.plan_id ===
+                          jobs.find((j) => j.id === i.job_id)?.plan_id,
+                      )
+                    ? "recurring"
+                    : records.find((p) => p.job_id === i.job_id)?.status ||
+                      "unpaid",
+          })),
+          payments_enabled:
+            configuration.homeowner_payments_enabled &&
+            connection?.payments_ready === true &&
+            connection?.payouts_ready === true,
+        });
+        return true;
+      }
+      if (pathname === "/api/billing/invoice-payment") {
+        if (!body.invoice_id || access.invoices.length !== 1)
+          throw Object.assign(Error("Choose one invoice"), { status: 400 });
+        if (
+          access.invoices[0].settlement_status &&
+          access.invoices[0].settlement_status !== "open"
+        )
+          throw Object.assign(Error("This invoice is settled or void"), {
+            status: 409,
+          });
+        body.job_id = access.invoices[0].job_id;
+      }
 
-  if(pathname==='/api/billing/lead-package'){if(!stripe||!signing)throw Object.assign(Error('Lead package payments are unavailable'),{status:503});send(200,await leadPackageCheckout({body,cid,actor:user.id,stripe,db,env}));return true;}
-  if(pathname==='/api/billing/status'){send(200,{fee_percent:FEE_BPS[feePlan(a)]/100,...(await ready()),subscription:a?{plan:a.plan,status:a.status,paid:a.paid,period_end:a.period_end,cancel_at_period_end:a.cancel_at_period_end}:{plan:'starter',status:'free',paid:false}});return true}
-  if(pathname==='/api/billing/accounting'){const r=await ready();const activity=await db('mow_payment_activity?select=event_id,event_type,object_id,amount_cents,currency,status,event_created&company_id=eq.'+encodeURIComponent(cid)+'&order=event_created.desc,event_id.desc&limit=25');send(200,{...r,fee_percent:FEE_BPS[feePlan(a)]/100,plan:feePlan(a),activity,...(stripe&&r.stripe_account_verified?await accounting(a):{connection:null,transactions:[],payouts:[],balances:null})});return true}
-  if(pathname==='/api/billing/connect/onboarding'){if(!(await ready()).connect_onboarding_enabled)throw Object.assign(Error('Stripe Connect setup is awaiting activation'),{status:503});a=await ensureCustomer(cid);const link=await stripe.v2.core.accountLinks.create({account:a.customer_id,use_case:{type:'account_onboarding',account_onboarding:{configurations:['merchant','customer'],refresh_url:'https://office.mowmatter.com/billing.html?onboarding=refresh',return_url:'https://office.mowmatter.com/billing.html?onboarding=returned'}}});send(200,{url:link.url});return true}
-  if(pathname==='/api/billing/payment-link'||pathname==='/api/billing/invoice-payment'){const r=await ready();if(!r.homeowner_payments_enabled)throw Object.assign(Error('Customer payments are awaiting Stripe Connect activation'),{status:503});const c=await connected(a);if(!c?.payments_ready||!c.payouts_ready)throw Object.assign(Error('Finish Stripe verification and bank setup first'),{status:409});const jobs=await db('mow_crew_jobs?select=id,status,price_cents,cancelled_at,plan_id&company_id=eq.'+encodeURIComponent(cid)+'&id=eq.'+encodeURIComponent(body.job_id));const job=jobs[0];if(!job||job.cancelled_at||job.status!=='completed'||!Number.isSafeInteger(job.price_cents)||job.price_cents<=0)throw Object.assign(Error('Choose a completed, priced visit'),{status:400});const issued=(await db('mow_customer_invoices?select=amount_cents,settlement_status&company_id=eq.'+cid+'&job_id=eq.'+encodeURIComponent(job.id)))[0];if(issued?.settlement_status&&issued.settlement_status!=='open')throw Object.assign(Error('This invoice is settled or void'),{status:409});if(Number.isSafeInteger(issued?.amount_cents))job.price_cents=issued.amount_cents;
-  if(job.plan_id&&(await db('mow_homeowner_subscriptions?select=plan_id&company_id=eq.'+cid+'&plan_id=eq.'+encodeURIComponent(job.plan_id))).length)throw Object.assign(Error('This visit is billed through a recurring plan. Manage the subscription instead.'),{status:409});if(customerRoute)job.price_cents=access.invoices[0].amount_cents;const previous=await db('mow_payment_checkouts?select=*&job_id=eq.'+encodeURIComponent(job.id));if(previous[0]?.status==='paid')throw Object.assign(Error('This visit has already been paid'),{status:409});if(previous[0]?.session_id){if(previous[0].amount_cents!==job.price_cents)throw Object.assign(Error('Payment amount changed. Contact your provider.'),{status:409});const old=await stripe.checkout.sessions.retrieve(previous[0].session_id,{},{stripeAccount:c.account_id});if(old.status==='open'){send(200,{url:old.url});return true}if(old.status==='complete')throw Object.assign(Error('Payment confirmation is pending'),{status:409});}
-  const plan=feePlan(a),fee=feeCents(job.price_cents,plan),nonce=randomUUID();const claimed=await db('rpc/mow_payment_claim','POST',{jid:job.id,cid,token:nonce,amount:job.price_cents,bps:FEE_BPS[plan],fee});if(!claimed)throw Object.assign(Error('A payment link is already being prepared'),{status:409});const suffix=[...randomBytes(8)].map(n=>String.fromCharCode(97+n%26)).join('');const session=await stripe.checkout.sessions.create({mode:'payment',line_items:[{price_data:{currency:'usd',unit_amount:job.price_cents,product_data:{name:'Completed lawn care visit'}},quantity:1}],payment_intent_data:{application_fee_amount:fee,metadata:{mowmatter_job:job.id,fee_bps:String(FEE_BPS[plan]),fee_plan:plan}},metadata:{mowmatter_job:job.id},integration_identifier:'mowmatter_homeowner_'+suffix,expires_at:Math.floor(Date.now()/1000)+1800,success_url:customerRoute?'https://office.mowmatter.com/customer-account.html?'+new URLSearchParams({business:cid,customer:body.customer_id,payment:'returned'}):'https://mowmatter.com/payment.html?result=returned',cancel_url:customerRoute?'https://office.mowmatter.com/customer-account.html?'+new URLSearchParams({business:cid,customer:body.customer_id,payment:'cancelled'}):'https://mowmatter.com/payment.html?result=cancelled'},{stripeAccount:c.account_id,idempotencyKey:'mowmatter-job-'+nonce});await db('mow_payment_checkouts?job_id=eq.'+encodeURIComponent(job.id)+'&nonce=eq.'+nonce,'PATCH',{session_id:session.id},'return=minimal');send(200,{url:session.url});return true;}
-  if(!(await ready()).checkout_enabled)throw Object.assign(Error('Billing setup is being completed. No payment was taken.'),{status:503});
-  if(pathname==='/api/billing/portal'){if(!a?.customer_id)throw Object.assign(Error('No subscription to manage yet'),{status:400});const p=await stripe.billingPortal.sessions.create({customer_account:a.customer_id,configuration:'bpc_1UNdtv1fvEozmSlD6FhdOwa1',return_url:'https://office.mowmatter.com/billing.html'});send(200,{url:p.url});return true}
-  if(pathname!=='/api/billing/checkout'){send(404,{error:'Not found'});return true}
-  if(!PLANS[body.plan])throw Object.assign(Error('Choose a valid plan'),{status:400});
-  a=await ensureCustomer(cid);const subscriptions=await stripe.subscriptions.list({customer_account:a.customer_id,status:'all',limit:100});if(subscriptions.data.some(s=>!['canceled','incomplete_expired'].includes(s.status)))throw Object.assign(Error('You already have a subscription. Use Manage billing.'),{status:409});
-  const nonce=randomUUID(),claimed=await db('rpc/mow_billing_checkout_claim','POST',{cid,nonce});
-  if(!claimed){a=await account(cid);if(a.checkout_session){const existing=await stripe.checkout.sessions.retrieve(a.checkout_session);if(existing.status==='open'&&existing.url){send(200,{url:existing.url});return true}}throw Object.assign(Error('Checkout is already being prepared. Try again shortly.'),{status:409});}
-  try{const suffix=[...randomBytes(8)].map(n=>String.fromCharCode(97+n%26)).join('');const session=await stripe.checkout.sessions.create({mode:'subscription',customer_account:a.customer_id,line_items:[{price:PLANS[body.plan].price,quantity:1}],expires_at:Math.floor(Date.now()/1000)+1800,integration_identifier:'mowmatter_office_'+suffix,success_url:'https://office.mowmatter.com/billing.html?checkout=returned',cancel_url:'https://office.mowmatter.com/billing.html?checkout=cancelled'},{idempotencyKey:'mowmatter-checkout-'+nonce});await db('mow_billing_accounts?company_id=eq.'+encodeURIComponent(cid)+'&checkout_nonce=eq.'+nonce,'PATCH',{checkout_session:session.id},'return=minimal');send(200,{url:session.url});}
-  catch(e){/* Keep the lease after an uncertain network result to prevent duplicate sessions. */throw e;}
- }catch(e){send(e.status||503,{error:e.status?e.message:'Billing is temporarily unavailable. No new payment was submitted by this request.'});}return true;};
+      if (pathname === "/api/billing/lead-package") {
+        if (!stripe || !signing || !(await ready()).checkout_enabled)
+          throw Object.assign(Error("Lead package payments are unavailable"), {
+            status: 503,
+          });
+        send(
+          200,
+          await leadPackageCheckout({
+            body,
+            cid,
+            actor: user.id,
+            stripe,
+            db,
+            env,
+          }),
+        );
+        return true;
+      }
+      if (pathname === "/api/billing/status") {
+        send(200, {
+          fee_percent: FEE_BPS[feePlan(a)] / 100,
+          ...(await ready()),
+          subscription: a
+            ? {
+                plan: a.plan,
+                status: a.status,
+                paid: a.paid,
+                period_end: a.period_end,
+                cancel_at_period_end: a.cancel_at_period_end,
+              }
+            : { plan: "starter", status: "free", paid: false },
+        });
+        return true;
+      }
+      if (pathname === "/api/billing/accounting") {
+        const r = await ready();
+        const activity = await db(
+          "mow_payment_activity?select=event_id,event_type,object_id,amount_cents,currency,status,event_created&company_id=eq." +
+            encodeURIComponent(cid) +
+            "&order=event_created.desc,event_id.desc&limit=25",
+        );
+        send(200, {
+          ...r,
+          fee_percent: FEE_BPS[feePlan(a)] / 100,
+          plan: feePlan(a),
+          activity,
+          ...(stripe && r.stripe_account_verified
+            ? await accounting(a)
+            : {
+                connection: null,
+                transactions: [],
+                payouts: [],
+                balances: null,
+              }),
+        });
+        return true;
+      }
+      if (pathname === "/api/billing/connect/onboarding") {
+        if (!(await ready()).connect_onboarding_enabled)
+          throw Object.assign(
+            Error("Stripe Connect setup is awaiting activation"),
+            { status: 503 },
+          );
+        a = await ensureCustomer(cid);
+        const link = await stripe.v2.core.accountLinks.create({
+          account: a.customer_id,
+          use_case: {
+            type: "account_onboarding",
+            account_onboarding: {
+              configurations: ["merchant", "customer"],
+              refresh_url:
+                "https://office.mowmatter.com/billing.html?onboarding=refresh",
+              return_url:
+                "https://office.mowmatter.com/billing.html?onboarding=returned",
+            },
+          },
+        });
+        send(200, { url: link.url });
+        return true;
+      }
+      if (
+        pathname === "/api/billing/payment-link" ||
+        pathname === "/api/billing/invoice-payment"
+      ) {
+        const r = await ready();
+        if (!r.homeowner_payments_enabled)
+          throw Object.assign(
+            Error("Customer payments are awaiting Stripe Connect activation"),
+            { status: 503 },
+          );
+        const c = await connected(a);
+        if (!c?.payments_ready || !c.payouts_ready)
+          throw Object.assign(
+            Error("Finish Stripe verification and bank setup first"),
+            { status: 409 },
+          );
+        const jobs = await db(
+          "mow_crew_jobs?select=id,status,price_cents,cancelled_at,plan_id&company_id=eq." +
+            encodeURIComponent(cid) +
+            "&id=eq." +
+            encodeURIComponent(body.job_id),
+        );
+        const job = jobs[0];
+        if (
+          !job ||
+          job.cancelled_at ||
+          job.status !== "completed" ||
+          !Number.isSafeInteger(job.price_cents) ||
+          job.price_cents <= 0
+        )
+          throw Object.assign(Error("Choose a completed, priced visit"), {
+            status: 400,
+          });
+        const issued = (
+          await db(
+            "mow_customer_invoices?select=amount_cents,settlement_status&company_id=eq." +
+              cid +
+              "&job_id=eq." +
+              encodeURIComponent(job.id),
+          )
+        )[0];
+        if (issued?.settlement_status && issued.settlement_status !== "open")
+          throw Object.assign(Error("This invoice is settled or void"), {
+            status: 409,
+          });
+        if (Number.isSafeInteger(issued?.amount_cents))
+          job.price_cents = issued.amount_cents;
+        if (
+          job.plan_id &&
+          (
+            await db(
+              "mow_homeowner_subscriptions?select=plan_id&company_id=eq." +
+                cid +
+                "&plan_id=eq." +
+                encodeURIComponent(job.plan_id),
+            )
+          ).length
+        )
+          throw Object.assign(
+            Error(
+              "This visit is billed through a recurring plan. Manage the subscription instead.",
+            ),
+            { status: 409 },
+          );
+        if (customerRoute) job.price_cents = access.invoices[0].amount_cents;
+        const result = await recovery.checkout({
+          job,
+          cid,
+          account: c.account_id,
+          plan: feePlan(a),
+          bps: FEE_BPS[feePlan(a)],
+          fee: feeCents(job.price_cents, feePlan(a)),
+          success_url: customerRoute
+            ? "https://office.mowmatter.com/customer-account.html?" +
+              new URLSearchParams({
+                business: cid,
+                customer: body.customer_id,
+                payment: "returned",
+              })
+            : "https://mowmatter.com/payment.html?result=returned",
+          cancel_url: customerRoute
+            ? "https://office.mowmatter.com/customer-account.html?" +
+              new URLSearchParams({
+                business: cid,
+                customer: body.customer_id,
+                payment: "cancelled",
+              })
+            : "https://mowmatter.com/payment.html?result=cancelled",
+        });
+        send(200, result);
+        return true;
+      }
+
+      if (!(await ready()).checkout_enabled)
+        throw Object.assign(
+          Error("Billing setup is being completed. No payment was taken."),
+          { status: 503 },
+        );
+      if (pathname === "/api/billing/portal") {
+        if (!portalConfiguration)
+          throw Object.assign(
+            Error("Billing portal is not configured for this environment"),
+            { status: 503 },
+          );
+        if (!a?.customer_id)
+          throw Object.assign(Error("No subscription to manage yet"), {
+            status: 400,
+          });
+        const p = await stripe.billingPortal.sessions.create({
+          customer_account: a.customer_id,
+          configuration: portalConfiguration,
+          return_url: "https://office.mowmatter.com/billing.html",
+        });
+        send(200, { url: p.url });
+        return true;
+      }
+      if (pathname !== "/api/billing/checkout") {
+        send(404, { error: "Not found" });
+        return true;
+      }
+      if (!PLANS[body.plan])
+        throw Object.assign(Error("Choose a valid plan"), { status: 400 });
+      a = await ensureCustomer(cid);
+      const subscriptions = await stripe.subscriptions.list({
+        customer_account: a.customer_id,
+        status: "all",
+        limit: 100,
+      });
+      if (
+        subscriptions.data.some(
+          (s) => !["canceled", "incomplete_expired"].includes(s.status),
+        )
+      )
+        throw Object.assign(
+          Error("You already have a subscription. Use Manage billing."),
+          { status: 409 },
+        );
+      if (a.checkout_session) {
+        const old = await stripe.checkout.sessions.retrieve(a.checkout_session);
+        if (old.status === "open" && old.url) {
+          send(200, { url: old.url });
+          return true;
+        }
+        if (old.status !== "expired")
+          throw Object.assign(Error("Subscription confirmation is pending"), {
+            status: 409,
+          });
+        await db("rpc/mow_subscription_expire", "POST", {
+          cid,
+          token: a.checkout_nonce,
+          sid: old.id,
+        });
+        a = await account(cid);
+      }
+      let nonce = a.checkout_nonce;
+      if (!nonce) {
+        nonce = randomUUID();
+        const claimed = await db("rpc/mow_billing_checkout_claim", "POST", {
+          cid,
+          nonce,
+        });
+        if (!claimed) {
+          a = await account(cid);
+          nonce = a.checkout_nonce;
+          if (!nonce)
+            throw Object.assign(Error("Checkout is already being prepared"), {
+              status: 409,
+            });
+        }
+      }
+      send(
+        200,
+        await savedSubscription({
+          cid,
+          nonce,
+          kind: "office",
+          subject: cid,
+          request: {
+            mode: "subscription",
+            customer_account: a.customer_id,
+            line_items: [{ price: prices[body.plan], quantity: 1 }],
+            metadata: { mowmatter_company: cid, mowmatter_attempt: nonce },
+            success_url:
+              "https://office.mowmatter.com/billing.html?checkout=returned",
+            cancel_url:
+              "https://office.mowmatter.com/billing.html?checkout=cancelled",
+          },
+        }),
+      );
+    } catch (e) {
+      send(e.status || 503, {
+        error: e.status
+          ? e.message
+          : "Billing is temporarily unavailable. Payment confirmation may be pending. Retry to recover the existing attempt.",
+      });
+    }
+    return true;
+  };
 }

@@ -1,3 +1,5 @@
+import { backend } from "../operations/access.mjs";
+import { randomUUID } from "node:crypto";
 // API-root deployment must not import files from the separately hosted Office app.
 function validateSetup(profile) {
   if (typeof profile.city !== "string" || profile.city.length > 100)
@@ -24,8 +26,6 @@ function validateSetup(profile) {
   )
     throw Error("Crew size must be whole and costs must be whole cents.");
 }
-const BASE = "https://pzymmsfjgspvzbivzvkx.supabase.co";
-const PUBLIC_KEY = "sb_publishable_KQGD-vWlAlJi_Bv7fSaEvA_YLJpIgyu";
 const modes = ["fixed", "area", "hourly", "unit", "inspection"];
 const fail = (message, status) => Object.assign(Error(message), { status });
 export function validateSuggestion(output, services) {
@@ -96,6 +96,7 @@ export function createSetupAI({
   generate,
   now = Date.now,
 } = {}) {
+  const access = backend({ env, fetcher });
   let day = "",
     total = 0;
   const counters = new Map();
@@ -193,39 +194,8 @@ export function createSetupAI({
         )
       )
         throw fail("Invalid service definitions.", 400);
-      const auth = await fetcher(BASE + "/auth/v1/user", {
-        headers: { apikey: PUBLIC_KEY, Authorization: authorization },
-        signal: AbortSignal.timeout(10000),
-      });
-      if (!auth.ok) throw fail("Sign in again.", 401);
-      const user = await auth.json();
-      if (typeof user.id !== "string" || !/^[a-f0-9-]{36}$/i.test(user.id))
-        throw fail("Invalid owner session.", 401);
-      const membership = await fetcher(
-        BASE +
-          "/rest/v1/mow_crew_members?select=company_id,role&user_id=eq." +
-          encodeURIComponent(user.id) +
-          "&role=eq.owner&limit=2",
-        {
-          headers: { apikey: PUBLIC_KEY, Authorization: authorization },
-          signal: AbortSignal.timeout(10000),
-        },
-      );
-      if (!membership.ok)
-        throw fail("Owner permission could not be verified.", 403);
-      const rows = await membership.json();
-      if (
-        !Array.isArray(rows) ||
-        !rows.length ||
-        rows.some((r) => r.role !== "owner" || !r.company_id)
-      )
-        throw fail("Business owner access is required.", 403);
-      if (rows.length !== 1)
-        throw fail(
-          "Select a single owner workspace before requesting setup suggestions.",
-          409,
-        );
-      const cid = rows[0].company_id,
+      const user = await access.owner(req, input.company_id);
+      const cid = input.company_id,
         currentDay = new Date(now()).toISOString().slice(0, 10);
       if (currentDay !== day) {
         day = currentDay;
@@ -240,6 +210,16 @@ export function createSetupAI({
         );
       total++;
       counters.set(cid, (counters.get(cid) || 0) + 1);
+      const rid = randomUUID();
+      if (
+        !(await access.db("rpc/mow_credit_reserve", "POST", {
+          actor: user.id,
+          cid,
+          rid,
+          kind: "setup",
+        }))
+      )
+        throw fail("Monthly usage credits are exhausted.", 429);
       let suggestions;
       try {
         suggestions = validateSuggestion(
@@ -247,11 +227,21 @@ export function createSetupAI({
           services,
         );
       } catch {
+        await access.db("rpc/mow_credit_finish", "POST", {
+          cid,
+          rid,
+          success: false,
+        });
         throw fail(
           "AI could not return usable suggestions. Your existing draft is unchanged.",
           502,
         );
       }
+      await access.db("rpc/mow_credit_finish", "POST", {
+        cid,
+        rid,
+        success: true,
+      });
       send(200, { suggestions, requires_owner_approval: true });
     } catch (e) {
       send(e.status || 503, {

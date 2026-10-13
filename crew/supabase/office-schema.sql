@@ -2,7 +2,7 @@
 create table if not exists public.mow_customers (
  id uuid primary key default gen_random_uuid(), company_id uuid not null references public.mow_crew_companies(id),
  name text not null check(length(name) between 1 and 100), address text not null check(length(address) between 3 and 200),
- city text not null default 'Palm Coast, FL', email text not null default '', phone text not null default '',
+ city text not null, email text not null default '', phone text not null default '',
  notes text not null default '', latitude double precision, longitude double precision,
  notification_consent boolean not null default false, created_at timestamptz not null default now(),
  updated_at timestamptz not null default now(), unique(company_id,id)
@@ -68,8 +68,9 @@ begin
   if length(coalesce(payload->>'email',''))>254 or length(coalesce(payload->>'phone',''))>30 or length(coalesce(payload->>'notes',''))>1500 then raise exception 'Customer details are too long';end if;
   if (nullif(payload->>'latitude','') is null)<>(nullif(payload->>'longitude','') is null) then raise exception 'Enter both coordinates or neither';end if;
   if abs(nullif(payload->>'latitude','')::double precision)>90 or abs(nullif(payload->>'longitude','')::double precision)>180 then raise exception 'Invalid coordinates';end if;
+  if length(trim(coalesce(payload->>'city',''))) not between 1 and 100 then raise exception 'Enter city and state'; end if;
   insert into mow_customers(id,company_id,name,address,city,email,phone,notes,latitude,longitude,notification_consent)
-  values(rid,cid,trim(payload->>'name'),trim(payload->>'address'),left(coalesce(payload->>'city','Palm Coast, FL'),100),coalesce(payload->>'email',''),coalesce(payload->>'phone',''),coalesce(payload->>'notes',''),nullif(payload->>'latitude','')::double precision,nullif(payload->>'longitude','')::double precision,coalesce((payload->>'notification_consent')::boolean,false))
+  values(rid,cid,trim(payload->>'name'),trim(payload->>'address'),trim(payload->>'city'),coalesce(payload->>'email',''),coalesce(payload->>'phone',''),coalesce(payload->>'notes',''),nullif(payload->>'latitude','')::double precision,nullif(payload->>'longitude','')::double precision,coalesce((payload->>'notification_consent')::boolean,false))
   on conflict(id) do update set name=excluded.name,address=excluded.address,city=excluded.city,email=excluded.email,phone=excluded.phone,notes=excluded.notes,latitude=excluded.latitude,longitude=excluded.longitude,notification_consent=excluded.notification_consent,updated_at=now() where mow_customers.company_id=cid;
   if not found then raise exception 'Customer access denied';end if;
   return jsonb_build_object('ok',true,'customer_id',rid);

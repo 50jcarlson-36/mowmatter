@@ -62,12 +62,12 @@ test("successful delivery records acceptance, uncertain sends are not retried", 
       configured: () => true,
       send: async () => {
         sends++;
-        return { sid: "vonage:message" };
+        return { sid: "bird:sms_message" };
       },
     },
   });
   assert.equal((await run()).status, "accepted");
-  assert.equal(calls[1][2].provider_id, "vonage:message");
+  assert.equal(calls[1][2].provider_id, "bird:sms_message");
   assert.equal(sends, 1);
   const uncertain = createRouteNotices({
     backend: b,

@@ -16,7 +16,11 @@ export function createVisitSMS({ backend: b, transport } = {}) {
       });
     const body = `${claim.company_name} via MowMatter: ${claim.kind === "arrival" ? "We arrived for your lawn care visit." : "We finished your lawn care visit. View your visit details and photos:"} ${url} Reply STOP to opt out, HELP for help.`;
     try {
-      const r = await transport.send({ to: claim.phone, body });
+      const r = await transport.send({
+        to: claim.phone,
+        idempotencyKey: "visit:" + claim.id,
+        body,
+      });
       await b.db("mow_visit_sms_messages?id=eq." + claim.id, "PATCH", {
         status: "accepted",
         provider_id: r.sid,
