@@ -36,17 +36,46 @@ async function api(action, body = {}) {
 async function load() {
   await window.MM.ready;
   if (window.MM.recovery) {
-    $("auth").hidden = false; $("offers").hidden = true; $("logout").hidden = true;
-    $("auth").innerHTML = '<h2>Choose a new password</h2><form id="yard-recovery"><label>New password<input name="password" type="password" autocomplete="new-password" minlength="8" required></label><button>Save password</button></form>';
-    $("yard-recovery").onsubmit = async event => { event.preventDefault(); const button=event.submitter;button.disabled=true;try{await MM.updatePassword(event.target.elements.password.value);await load()}catch(error){$("status").textContent=error.message}finally{button.disabled=false}};
+    $("auth").hidden = false;
+    $("offers").hidden = true;
+    $("logout").hidden = true;
+    $("auth").innerHTML =
+      '<h2>Choose a new password</h2><form id="yard-recovery"><label>New password<input name="password" type="password" autocomplete="new-password" minlength="8" required></label><button>Save password</button></form>';
+    $("yard-recovery").onsubmit = async (event) => {
+      event.preventDefault();
+      const button = event.submitter;
+      button.disabled = true;
+      try {
+        await MM.updatePassword(event.target.elements.password.value);
+        await load();
+      } catch (error) {
+        $("status").textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
+    };
     return;
   }
   if (!window.MM.session) {
     $("auth").hidden = false;
-    MM.mountGoogleLogin($("login"), { autoStart: false, status: $("status"), acceptance: () => {
-      if (!$("terms").checked) { $("terms").focus(); throw Error("Agree to the terms and review the privacy policy before continuing with Google."); }
-      return {terms_version:"2026-10-07",privacy_notice_version:"2026-10-11",account_audience:"customer",terms_accepted_at:new Date().toISOString()};
-    }});
+    MM.mountGoogleLogin($("login"), {
+      autoStart: false,
+      status: $("status"),
+      acceptance: () => {
+        if (!$("terms").checked) {
+          $("terms").focus();
+          throw Error(
+            "Agree to the terms and review the privacy policy before continuing with Google.",
+          );
+        }
+        return {
+          terms_version: "2026-10-07",
+          privacy_notice_version: "2026-10-11",
+          account_audience: "customer",
+          terms_accepted_at: new Date().toISOString(),
+        };
+      },
+    });
     $("offers").hidden = true;
     $("logout").hidden = true;
     return;
@@ -133,13 +162,23 @@ load().catch((e) => {
   $("status").textContent = e.message;
 });
 
-for (const [id, method] of [["yard-forgot", "resetPassword"], ["yard-resend", "resend"]]) {
-  $(id).onclick = async event => {
-    const email=$("login").elements.email;
+for (const [id, method] of [
+  ["yard-forgot", "resetPassword"],
+  ["yard-resend", "resend"],
+]) {
+  $(id).onclick = async (event) => {
+    const email = $("login").elements.email;
     if (!email.reportValidity()) return;
-    const button=event.currentTarget;button.disabled=true;
-    try { await MM[method](email.value); $("status").textContent="If eligible, an email has been requested. Check your inbox and spam folder."; }
-    catch(error) { $("status").textContent=error.message; }
-    finally { button.disabled=false; }
+    const button = event.currentTarget;
+    button.disabled = true;
+    try {
+      await MM[method](email.value);
+      $("status").textContent =
+        "If eligible, an email has been requested. Check your inbox and spam folder.";
+    } catch (error) {
+      $("status").textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
   };
 }
