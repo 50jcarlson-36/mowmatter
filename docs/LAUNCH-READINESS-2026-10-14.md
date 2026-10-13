@@ -28,7 +28,7 @@ Facebook is disabled in Supabase, explaining its absence. Disabled buttons are h
 
 ## Validation and limitations
 
-API check suite, source/security-header/drift gates, formatting and baseline 163 tests passed; new email suite passes 5/5. Office/Crew suites/builds and marketing activity-toast tests/build passed. Final release CI/deployment evidence follows in operations contract.
+Final API check suite, source/security-header/drift gates, formatting and all 164 tests passed; email suite passes 5/5. Office/Crew suites/builds and marketing activity-toast tests/build passed. GitHub quality and Cloudflare Workers Builds succeeded for release 1446613c2b1f569af825935522b4c5d7325533f0. Crew Edge v11 is ACTIVE; all six deployed files match source and anonymous access still returns 401. Office deployment verification is recorded in the operations contract.
 
 API production dependency audit: zero vulnerabilities. Marketing development tooling: seven existing findings (two moderate, five high), requiring scheduled remediation. No risky forced dependency upgrades tonight.
 
@@ -39,3 +39,7 @@ Performance advisors: 24 unindexed foreign keys, 16 unused indexes, one auth con
 Earlier same-day backup evidence: daily database snapshot October 13 08:16 UTC; no PITR or Storage object-byte coverage. Schema restore regression exists; full production disaster recovery not rehearsed. Confirm recovery requirements and separate object backups.
 
 No customer communications, real charges, customer-record changes or provider policy changes performed. SMS/Facebook remain disabled. No API runtime redeployment needed.
+
+## Final release evidence
+
+Office cleared-cache deployment dep-db7bqulg1s2s739tvt40 is live at release 1446613c2b1f569af825935522b4c5d7325533f0. Retired script returns 404 and public login HTML matches source. Crew Edge v11 matches all six release files. GitHub quality and marketing build succeeded. Remaining external launch conditions above are unchanged.

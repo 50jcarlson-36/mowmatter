@@ -355,3 +355,6 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - See docs/LAUNCH-READINESS-2026-10-14.md for evidence and limits. Real personal-Gmail consent/onboarding remains a launch gate; SMS disabled; no connected operators yet.
 - Corrected Crew completion email wrapper/stale invoice dependency with regression; synced root stylesheet and drift gate; archived unused public Office script.
 - 59 public assets matched with security headers. No warning/error security advisors; direct browser table access denied. API production dependency audit zero vulnerabilities; marketing tooling seven existing findings. Auth/webhook negative checks passed. No real transactions or communications performed.
+
+- Release `1446613c2b1f569af825935522b4c5d7325533f0`: all 164 API tests and GitHub quality passed; Cloudflare Workers Builds succeeded. Crew Edge version 11 ACTIVE with all six files matching read-back and anonymous request still 401.
+- Office initial deployment `dep-db7bq02vcj2c73d1p310` was live but retired asset persisted. Cleared-build-cache deployment `dep-db7bqulg1s2s739tvt40` live at 23:23:58 UTC; public retired script now 404 and login HTML matches source. No API or Crew static deployment needed.
