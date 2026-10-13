@@ -18,6 +18,55 @@
       );
   document.getElementById("close-dialog").onclick = () =>
     document.getElementById("dialog").close();
+  function renderAuth(mode = "login", email = "", provider = "google") {
+    const signup = mode === "signup", forgot = mode === "forgot", recovery = mode === "recovery", social = mode === "social";
+    const title = signup ? "Create your account" : forgot ? "Forgot your password?" : recovery ? "Choose a new password" : social ? "Continue with " + (provider === "google" ? "Google" : "Facebook") : "Welcome back";
+    main.innerHTML = `<section class="card customer-auth"><h2 tabindex="-1">${title}</h2><p class="auth-intro">${forgot ? "Enter your account email and we’ll send a reset link." : recovery ? "Use at least 8 characters for your new password." : "Use the email your lawn care company has on file."}</p><form id="account-auth" class="form">
+      ${recovery || social ? "" : `<label>Email<input name="email" type="email" required autocomplete="username" value="${esc(email)}"></label>`}
+      ${forgot || social ? "" : `<div class="password-heading"><label for="account-password">${recovery ? "New password" : "Password"}</label>${mode === "login" ? '<button type="button" class="auth-link" id="reset-password">Forgot password?</button>' : ""}</div><input id="account-password" name="password" type="password" required ${signup || recovery ? 'minlength="8"' : ''} autocomplete="${signup || recovery ? "new-password" : "current-password"}">`}
+      ${signup || social ? MowNotice.markup("customer") : ""}
+      <button class="button primary auth-submit">${signup ? "Create account" : forgot ? "Send reset link" : recovery ? "Save password" : social ? title : "Sign in"}</button>
+      <p role="status" aria-live="polite"></p>
+      </form>
+      ${recovery ? "" : `<div class="auth-secondary">${mode === "login" ? 'New here? <button type="button" class="auth-link" id="create-account">Create account</button>' : '<button type="button" class="auth-link" id="back-login">Back to sign in</button>'}</div>`}
+      ${mode === "login" ? '<details class="auth-confirmation"><summary>Waiting for a confirmation email?</summary><button type="button" class="auth-link" id="resend-confirmation">Resend confirmation email</button></details>' : ""}</section>`;
+    const form = document.getElementById("account-auth"), status = form.querySelector('[role="status"]');
+    const currentEmail = () => form.elements.email?.value || email;
+    const switchMode = (next) => { renderAuth(next, currentEmail()); main.querySelector("h2").focus(); };
+    if (mode === "login") {
+      MM.mountGoogleLogin(form, { autoStart: false });
+      // Facebook is not enabled for this project; expose the available provider.
+      main.querySelector("[data-facebook-login]")?.remove();
+      for (const name of ["google", "facebook"]) {
+        const button = main.querySelector(`[data-${name}-login]`);
+        if (button) button.onclick = () => { renderAuth("social", currentEmail(), name); main.querySelector("h2").focus(); };
+      }
+      document.getElementById("reset-password").onclick = () => switchMode("forgot");
+      document.getElementById("create-account").onclick = () => switchMode("signup");
+      document.getElementById("resend-confirmation").onclick = async (event) => {
+        if (!form.elements.email.reportValidity()) return;
+        const button = event.currentTarget; button.disabled = true;
+        try { await MM.resend(currentEmail()); status.textContent = "If eligible, a confirmation email has been requested. Check your inbox."; }
+        catch (err) { status.textContent = err.message; }
+        finally { button.disabled = false; }
+      };
+    }
+    document.getElementById("back-login")?.addEventListener("click", () => switchMode("login"));
+    form.onsubmit = async (event) => {
+      event.preventDefault();
+      const button = event.submitter || form.querySelector('button[type="submit"], .auth-submit');
+      button.disabled = true; status.textContent = "Working…";
+      try {
+        const values = new FormData(form);
+        if (forgot) { await MM.resetPassword(values.get("email")); status.textContent = "If eligible, a reset link has been requested. Check your inbox and spam folder."; }
+        else if (social) { await MM.socialSignIn(provider, undefined, MowNotice.validate(form, "customer")); }
+        else if (signup) { await MM.signUp(values.get("email"), values.get("password"), undefined, MowNotice.validate(form, "customer")); status.textContent = "Check your email to confirm your account, then return to sign in."; }
+        else if (recovery) { await MM.updatePassword(values.get("password")); await load(); }
+        else { await MM.signIn(values.get("email"), values.get("password")); await load(); }
+      } catch (err) { status.textContent = err.message; }
+      finally { button.disabled = false; }
+    };
+  }
   async function load() {
     await MM.ready;
     if (!company || !customer) {
@@ -26,47 +75,7 @@
       return;
     }
     if (!MM.session || MM.recovery) {
-      const recovery = MM.recovery;
-      main.innerHTML = `<section class="card"><h2>${recovery ? "Reset your password" : "Welcome back."}</h2><p>Use the email address your lawn care company has on file.</p><form id="account-auth" class="form">${recovery ? "" : '<label>Email<input name="email" type="email" required autocomplete="username"></label>'}<label>Password<input name="password" type="password" required minlength="8" autocomplete="${recovery ? "new-password" : "current-password"}"></label>${recovery ? "" : MowNotice.markup("customer")}<div class="actions"><button class="button primary" value="login">${recovery ? "Save password" : "Sign in"}</button>${recovery ? "" : '<button class="button" value="signup">Create account</button><button type="button" id="reset-password" class="button">Forgot password?</button>'}</div><p role="status" aria-live="polite"></p></form></section>`;
-      const form = document.getElementById("account-auth");
-      form.onsubmit = async (e) => {
-        e.preventDefault();
-        e.submitter.disabled = true;
-        try {
-          const f = new FormData(form);
-          if (recovery) {
-            await MM.updatePassword(f.get("password"));
-            await load();
-          } else if (e.submitter.value === "signup") {
-            await MM.signUp(f.get("email"), f.get("password"), undefined, MowNotice.validate(form, "customer"));
-            form.querySelector('[role="status"]').textContent =
-              "Check your email to confirm your account, then reopen your customer link.";
-          } else {
-            await MM.signIn(f.get("email"), f.get("password"));
-            await load();
-          }
-        } catch (err) {
-          form.querySelector('[role="status"]').textContent = err.message;
-        } finally {
-          e.submitter.disabled = false;
-        }
-      };
-      const reset = document.getElementById("reset-password");
-      if (reset)
-        reset.onclick = async () => {
-          const email = form.elements.email;
-          if (!email.reportValidity()) return;
-          reset.disabled = true;
-          try {
-            await MM.resetPassword(email.value);
-            form.querySelector('[role="status"]').textContent =
-              "If eligible, a recovery email has been requested.";
-          } catch (err) {
-            form.querySelector('[role="status"]').textContent = err.message;
-          } finally {
-            reset.disabled = false;
-          }
-        };
+      renderAuth(MM.recovery ? "recovery" : "login");
       return;
     }
     const logout = document.getElementById("account-logout");

@@ -326,3 +326,12 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - Render connection resolved the earlier signed-out-browser blocker. Office deployment `dep-db7ao92vcj2c73ctr1fg` and Crew deployment `dep-db7ao9l9fdbs73dgn6n0` are live at that application SHA; auto-deploy remains off. Public Office business-branding.css, business-branding.js and office-live.css, plus Crew crew.css, matched release bytes using a release query after deployment.
 - Supabase `mowmatter-business` version 6 and `mowmatter-invoice-delivery` version 3 are ACTIVE. Read-back entrypoints and invoice models matched release source; existing custom authentication and verify_jwt=false were preserved.
 - No API deployment, payment, SMS, auth-policy or customer-record change, and no customer communications sent during this layout release. The 192 local viewport checks remain layout evidence, not physical-device, email-client or complete authenticated transaction certification.
+
+
+## Customer mobile authentication correction — 2026-10-13
+
+- Customer-account entry now exposes Google sign-in; public Auth settings confirmed Google enabled and Facebook disabled. Facebook is omitted on this screen until configured. No provider configuration changed.
+- Dedicated email-only recovery, separate signup consent, visible password recovery beside the password label, and resend-confirmation action. Social continuation retains explicit customer-audience terms acknowledgement.
+- Customer OAuth callback now preserves business/customer query parameters, matching password recovery and signup return links. Provider authentication itself still requires a real user sign-in; no real messages sent in testing.
+- Optional SMS explanation remains available in a disclosure; footer uses flowing, two-column mobile links and safe-area spacing.
+- Office tests/build and shared-asset drift checks passed. Four authentication states tested at 320, 390, 768 and 1440 pixels with no horizontal overflow; intercepted Google handoff verified complete customer return URL.

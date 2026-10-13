@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="crew-live.css" />
     <link rel="stylesheet" href="office-live.css" />
     <link rel="stylesheet" href="business-branding.css" />
+    <link rel="stylesheet" href="customer-account.css" />
   </head>
   <body>
     <a class="skip" href="#main">Skip to account</a>
@@ -18,12 +19,12 @@
         <button id="account-logout" class="button" hidden>Sign out</button>
       </header>
       <main id="main"><p role="status">Loading your account…</p></main>
-      <section aria-labelledby="sms-program-title">
-        <h2 id="sms-program-title">Optional MowMatter text messages</h2>
+      <details class="customer-sms">
+        <summary>About optional text messages</summary>
         <p>Sign in to your account, enter a phone number you own, and select the optional text-message categories for your lawn-care provider. Each category requires a separate choice. You can receive arrival and completion updates (up to 2 status texts per visit), optional additional-service offers (up to 3 offer texts per day), and approaching, rescheduling or cancellation notices where available (message frequency varies).</p>
         <p>Message and data rates may apply. Consent is not required to purchase service. Reply STOP to opt out or HELP for help. Text replies do not approve work or authorize charges. For support, email <a href="mailto:support@mowmatter.com">support@mowmatter.com</a>. Read our <a href="https://mowmatter.com/terms.html">Terms</a> and <a href="https://mowmatter.com/privacy.html">Privacy Policy</a>.</p>
-      </section>
-      <footer>
+      </details>
+      <footer class="customer-footer">
         <img
           src="powered-by-mowmatter.svg"
           class="powered-mark"
@@ -31,10 +32,11 @@
           width="210"
           height="48"
         />
-        <p>
-          <a href="https://mowmatter.com/privacy.html">Privacy</a> ·
-          <a href="https://mowmatter.com/terms.html">Terms</a> · <a href="https://mowmatter.com/cookies.html">Your Privacy Choices</a> · <a href="https://mowmatter.com/contact.html">Privacy requests</a>
-        </p>
+        <nav aria-label="Privacy and support">
+          <a href="https://mowmatter.com/privacy.html">Privacy</a>
+          <a href="https://mowmatter.com/terms.html">Terms</a> <a href="https://mowmatter.com/cookies.html">Your Privacy Choices</a> <a href="https://mowmatter.com/contact.html">Privacy requests</a>
+          <a href="mailto:support@mowmatter.com">Contact support</a>
+        </nav>
       </footer>
     </div>
     <dialog id="dialog">

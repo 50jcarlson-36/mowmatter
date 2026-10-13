@@ -51,10 +51,10 @@ async function socialSignIn(provider,launchUpdates,acceptance){
  const challenge=base64url(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier))));
  sessionStorage.setItem(oauthKey,JSON.stringify({verifier,provider,started:Date.now(),launchUpdates:pendingPreference(),acceptance}));
  const target=new URL(base+'/auth/v1/authorize');
- target.search=new URLSearchParams({provider,redirect_to:location.origin+location.pathname,code_challenge:challenge,code_challenge_method:'s256',...(provider==='google'?{prompt:'select_account'}:{scopes:'email'})}).toString();
+ target.search=new URLSearchParams({provider,redirect_to:location.pathname.endsWith('/customer-account.html')?redirect():location.origin+location.pathname,code_challenge:challenge,code_challenge_method:'s256',...(provider==='google'?{prompt:'select_account'}:{scopes:'email'})}).toString();
  location.assign(target.href);
 }
-function mountGoogleLogin(form){
+function mountGoogleLogin(form,options={}){
  if(!form||form.parentElement.querySelector('[data-google-login]'))return;
  const button=document.createElement('button');button.type='button';button.className='button full';button.dataset.googleLogin='';
  button.style.cssText='width:100%;min-height:48px;display:flex;align-items:center;justify-content:center;gap:12px;margin:0 0 20px;background:#fff;color:#1f2937;border:1px solid #cbd5e1';
@@ -64,7 +64,7 @@ function mountGoogleLogin(form){
  const status=form.querySelector('[role="status"]');if(status){status.setAttribute('aria-live','polite');status.textContent=authError;}
  button.onclick=async()=>{button.disabled=true;button.setAttribute('aria-busy','true');try{const acceptance=form.elements.account_terms?MowNotice.validate(form,'business'):undefined;await socialSignIn('google',form.querySelector('[name=launch_updates]')?.checked,acceptance)}catch(err){if(status)status.textContent=err.message;button.disabled=false;button.removeAttribute('aria-busy')}};
  facebook.onclick=async()=>{facebook.disabled=true;facebook.setAttribute('aria-busy','true');try{const acceptance=form.elements.account_terms?MowNotice.validate(form,'business'):undefined;await socialSignIn('facebook',form.querySelector('[name=launch_updates]')?.checked,acceptance)}catch(err){if(status)status.textContent=err.message;facebook.disabled=false;facebook.removeAttribute('aria-busy')}};
- if(oauthRequested){const provider=oauthRequested;oauthRequested=null;void (provider==='facebook'?facebook:button).onclick();}
+ if(oauthRequested&&options.autoStart!==false){const provider=oauthRequested;oauthRequested=null;void (provider==='facebook'?facebook:button).onclick();}
 }
 
 window.MM={ready,saveLaunchUpdates,get launchUpdatesChoice(){return pendingPreference()},socialSignIn,googleSignIn:()=>socialSignIn('google'),facebookSignIn:()=>socialSignIn('facebook'),mountGoogleLogin,get authError(){return authError},async ensureSession(){await ready;if(!session)throw Error('Sign in to continue');if(session.expires_at<Date.now()+30000)await refresh();return session},get session(){return session},get recovery(){return recovery},
