@@ -251,3 +251,23 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - Browser verified embedded Business Login refusal. Live Office header responses differed across cache nodes: one allowed apex/www framing, another returned frame-ancestors none. Added an always-visible direct login fallback to early-access source; live header correction is still required.
 - Office and Crew HTTP checks return 200 with CSP/HSTS. Render dashboard requires sign-in, so deployed commit IDs and instance plan remain unverified.
 - Live payment config reports checkout/homeowner payments enabled, but no real charge/refund/payout was run. Payment attempts, dispatch routes, route notices and guarded settlement objects are absent in Supabase. PRs #4/#5/#6 remain open; do not equate a deployed Bird adapter with a complete go-live release.
+
+## Campaign execution and live header outcome
+
+- Bird campaign cmp_01m4tqyt9ffe49zsjgwwxjrxyd / TCR CYDJCUX was submitted October 13 at 9:41:44 AM Eastern. Sender +12019088951 is assigned; campaign and carrier linkage remain pending. Read-back reports numbers_linked=true. SMS is not activated and no test/customer text was sent.
+- Office CSP correction is live and fresh HTTP responses allow only apex/www framing. Existing authenticated signup navigation reaches the Office dashboard.
+- Verified service versions: API 32c10f09368f62346b280722715f8397a7b67b41, Office 7b3e125d78ad5d9757d203ef47b3399fb8b93629, Crew fdb6e70e9f972832f95c346ea51df2f6a76e5037. A combined release is not yet deployed.
+- The owner approved the $7/month API upgrade. Render started a compute-change deployment of older main 3f5edbe09b7620c68961c1935147725551206a6e, which lacks Bird; it was canceled (dep-db73b2ss728c73da1d30) before becoming live. The existing Bird commit remains live.
+- A specific-commit redeployment of the existing Bird API is prepared but automatic approval review rejected execution because the plan approval did not explicitly authorize production redeployment. Explicit approval has been requested. The always-on upgrade is not yet verified active.
+
+## Approved Bird redeployment and source pin
+
+- Explicit owner authorization received for deployment of 32c10f09368f62346b280722715f8397a7b67b41. Deployment dep-db73d14s728c73da7bh0 succeeded in 46.5 seconds, with Bird retained.
+- The canceled compute-change deployment rolled the plan back to Free. Created release/bird-api-32c10f0 at exactly the approved live commit and configured the API source to that branch with auto-deploy still Off; this avoids future compute/environment changes selecting older main without Bird. This is a temporary source pin pending the combined release of PRs #4/#5/#6, not a change to the repository production branch.
+- Reapplied the owner-approved $7/month compute selection against the pinned source. Final paid-plan/deployment verification remains in progress.
+
+## Verified upgrade complete — October 13, 9:51 AM Eastern
+
+- API is active on the owner-approved $7/month 0.5 CPU / 512 MB plan. Compute-change deployment dep-db73ece7bikc73a24da0 succeeded in 35.9 seconds at source 32c10f09368f62346b280722715f8397a7b67b41. Render's current compute page confirms the paid option checked. Source is pinned to release/bird-api-32c10f0; auto-deploy remains Off.
+- Carrier campaign CYDJCUX remains pending with the sender attached. The human confirmed Bird's registration/payment page; no customer SMS was sent.
+- Office CSP repair is live. Full commercial go-live is not claimed: carrier delivery/STOP/HELP checks, payment-recovery/schema release, combined service versions and restore validation remain outstanding.
