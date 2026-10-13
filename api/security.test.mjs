@@ -40,3 +40,8 @@ test('rotating forwarded headers cannot bypass the server-owned submission budge
   const r=await h(new Request('https://edge.invalid',{method:'POST',headers:{Origin:'https://mowmatter.com',apikey:'test','x-forwarded-for':ip},body:JSON.stringify(body)}));assert.equal(r.status,i===0?200:429);
  }assert.equal(saved,1);
 });
+test('marketing signup has a direct login escape when cross-origin embedding is blocked',()=>{
+ const html=readFileSync(new URL('web/dist/early-access.html',root),'utf8');
+ assert.match(html,/<a href="https:\/\/office\.mowmatter\.com\/login\.html" target="_blank" rel="noopener">/);
+ assert.match(html,/<iframe[^>]+id="business-login-frame"/);
+});

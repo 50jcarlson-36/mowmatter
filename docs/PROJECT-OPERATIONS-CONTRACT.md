@@ -241,3 +241,13 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - See docs/GO-LIVE-AUDIT-FIXES-2026-10-13.md for C1–C11 status and release order. Removed duplicate deploy.yml; existing Cloudflare Workers Builds remains the intended automatic marketing publisher.
 - Supabase read access succeeded: recovered all 17 original migration SQL records and captured a data-free public application schema (44 tables, 42 functions, four triggers). This does not reconcile migration history, validate a PostGIS restore, confirm backups or deploy any pending SQL.
 - B1–B4 remain commercial launch gates. C5 needs verified gateway IP provenance/CAPTCHA. Route notices remain disabled. No production writes, deployment, live payment or customer communication occurred in this remediation.
+
+## Launch verification — 2026-10-13
+
+- Live API health reports Bird configured but disabled; missing activation flags are MOW_SMS_ENABLED, BIRD_REGISTRATION_APPROVED and BIRD_WEBHOOKS_VERIFIED. No credentials were exposed.
+- Bird workspace ws_01m4p5vnn3ecjr6x465fw83r1d matches Mowmatter. Sender +12019088951 (snd_01m4rg70njfg6vxbdt2vz7bdez) is pending_registrations; US requirements report registration_required. Brand brd_01m4rfy4kzfmqvqxwtj623p8ga is approved, but has_campaigns=false and campaign list is empty. Account funding alone does not establish SMS readiness.
+- Existing Bird webhook whk_01m4tjc56nfn5t9ppk0qfjh94a at /api/commerce/sms/bird/webhook accepted a signed synthetic sms.delivered test with HTTP 200 (138 ms). This confirms signed reachability, not carrier delivery, real payload persistence or STOP/HELP behavior.
+- Marketing works in a real browser. A Python root request received 403, but browser navigation and curl /early-access succeeded; do not report the entire public site down.
+- Browser verified embedded Business Login refusal. Live Office header responses differed across cache nodes: one allowed apex/www framing, another returned frame-ancestors none. Added an always-visible direct login fallback to early-access source; live header correction is still required.
+- Office and Crew HTTP checks return 200 with CSP/HSTS. Render dashboard requires sign-in, so deployed commit IDs and instance plan remain unverified.
+- Live payment config reports checkout/homeowner payments enabled, but no real charge/refund/payout was run. Payment attempts, dispatch routes, route notices and guarded settlement objects are absent in Supabase. PRs #4/#5/#6 remain open; do not equate a deployed Bird adapter with a complete go-live release.

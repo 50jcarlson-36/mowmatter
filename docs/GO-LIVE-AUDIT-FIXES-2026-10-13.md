@@ -31,7 +31,7 @@ The Office build now preserves dispatch-board assets. Its DOM harness loads the 
 
 ## Validation
 
-- Production Node 22: full API check, 143 tests passed, including HTTP owner-billing checks, transpiled edge-function behavior and real PostgreSQL settlement/city/grant tests.
+- Production Node 22: full API check, 144 tests passed, including HTTP owner-billing checks, transpiled edge-function behavior and real PostgreSQL settlement/city/grant tests.
 - Office: complete DOM/auth/billing/privacy/branding suites and eight-page build passed.
 - Crew: field/offline DOM suite, four email tests and source-asset build verification passed.
 - Deno: all four edited edge functions type-check.
@@ -45,3 +45,5 @@ The Office build now preserves dispatch-board assets. Its DOM harness loads the 
 3. Apply Render response headers, arrange always-on worker/scheduler capacity, and deploy API/Office/Crew plus edited edge functions from the same approved source.
 4. Verify public responses, login iframe, OAuth, private photo upload and non-Florida signup flow; record deployed SHAs.
 5. Complete provider payment verification and opted-in SMS tests. Leave route messages disabled until their schema and active provider are verified.
+
+Launch-day browser verification found the embedded Business Login blocked by a live Office frame-ancestors none response. An always-visible direct login fallback is added to early-access; 144 API tests pass. The deployed header still needs correction. See the operations contract for Bird/carrier and live-database results.
