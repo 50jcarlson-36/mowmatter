@@ -117,6 +117,7 @@ export function paymentRecovery({ db, stripe, now = Date.now }) {
       throw fail("Payment record is unavailable or already paid", 409);
     const request = {
       mode: "payment",
+      managed_payments: { enabled: false },
       line_items: [
         {
           price_data: {

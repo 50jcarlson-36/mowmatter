@@ -999,6 +999,7 @@ export function createBilling({
           subject: cid,
           request: {
             mode: "subscription",
+            managed_payments: { enabled: false },
             customer_account: a.customer_id,
             line_items: [{ price: prices[body.plan], quantity: 1 }],
             metadata: { mowmatter_company: cid, mowmatter_attempt: nonce },
