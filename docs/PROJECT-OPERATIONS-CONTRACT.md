@@ -337,3 +337,12 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - Office tests/build and shared-asset drift checks passed. Four authentication states tested at 320, 390, 768 and 1440 pixels with no horizontal overflow; intercepted Google handoff verified complete customer return URL.
 
 - Production release: `15c8455f9307cdd704d4c70916706cbb0cc8b230`; Office Render deployment `dep-db7b5vtg1s2s739rk9d0` live at 22:39:13 UTC. Public customer-account.html/.js/.css and mm-client.js matched release bytes. No Crew or API deployment was required.
+
+
+## Global sign-in audit — 2026-10-13
+
+- Public Auth settings report Google enabled, email enabled, Facebook disabled. Five live Google authorization requests from Office home/login, Crew, customer account and Yard Insights returned 302 to accounts.google.com, without a hosted-domain parameter. No company-email restriction found in application authentication; personal Gmail is supported. Google Console audience/publishing status and an ordinary user's completed consent flow were not accessible/verified in this audit.
+- Added missing Yard Insights Google entry, explicit customer consent, password recovery/reset UI, and correct email return destination for both extensionless and .html Yard Insights paths.
+- Shared Office/marketing and Crew sign-in controls explain that personal email is accepted; Facebook buttons remain hidden unless provider settings report enabled. Customer-account Facebook remains omitted until configured.
+- Facebook requires enabling its Supabase provider with valid Meta App ID/secret, the project auth callback configured in Meta, email permission, and public/live app eligibility. Only the disabled Supabase flag is confirmed; absence/validity of Meta credentials and publishing state was not observable. No provider secrets or configuration changed.
+- Local browser checks passed Google handoff and exact return URL for all five entry paths. Office suites/build, Crew suites/build and shared-asset drift gate verified before release. No emails sent, accounts created, or tenant/role permissions changed. Full human Google consent still requires an end-user account.
