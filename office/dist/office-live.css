@@ -9,3 +9,28 @@ body{background:#f7faf5;background-image:radial-gradient(circle,#06271d08 .6px,t
 /* Growth demand controls remain usable on narrow mobile screens. */
 .demand-card{max-width:1100px}.demand-form{display:grid;grid-template-columns:minmax(140px,1fr) minmax(130px,1fr) auto;gap:16px;align-items:end;margin:24px 0}.demand-form label{display:grid;gap:8px;font-size:1rem}.demand-form input,.demand-form select{min-width:0;width:100%;min-height:48px;font:inherit;padding:12px;border:1px solid #a8b6ae;border-radius:8px;background:#fff;color:#102b21}.demand-form button{min-height:48px}.demand-count{font-size:1.35rem;line-height:1.5}.demand-count strong{font-size:1.75rem}.lead-access{font-weight:600;color:#166534}.lead-disclaimer{padding:16px;border:1px solid #aab7ae;border-left:4px solid #355a43;border-radius:6px;background:#f3f6f3;color:#253c2d;font-size:.9375rem;line-height:1.65;margin:20px 0}.lead-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px;margin:16px 0}.lead-card{padding:20px;border:1px solid #bdcbbf;border-radius:12px;overflow-wrap:anywhere}.lead-card h4{font-size:1.1rem;margin:0 0 12px}.lead-card p{line-height:1.5}.demand-card [role=status]{margin:12px 0}.demand-card .actions{flex-wrap:wrap}#growth-onboard fieldset{border:1px solid #aab7ae;border-radius:8px;padding:16px}#growth-onboard .check{display:flex;align-items:center;gap:10px;flex-wrap:wrap}#growth-onboard .check input{width:20px;min-height:20px}#growth-onboard legend{font-size:1rem}
 @media(max-width:600px){.demand-form{grid-template-columns:1fr 1fr}.demand-form button{grid-column:1/-1;width:100%}.demand-card{padding:20px}.demand-count{font-size:1.125rem}.lead-disclaimer{padding:12px}.demand-card #demand-unlock{width:100%}}@media(max-width:360px){.demand-form{grid-template-columns:1fr}}
+
+/* Phone layouts: allow content to reflow instead of clipping financial data. */
+.stats>div,.split>*,.two-fields>*,.section-head>*,.job-list li>div { min-width:0; }
+.card,.customer-card,.job-list li { overflow-wrap:anywhere; }
+input,select,textarea { max-width:100%; }
+dialog { overscroll-behavior:contain; }
+#close-dialog { min-width:44px; min-height:44px; }
+@media(max-width:768px) {
+  .section-head { flex-wrap:wrap; }
+  .job-list li>div { min-width:0; flex-basis:100%; }
+  .form fieldset { min-width:0; }
+  .form input:not([type=checkbox]):not([type=radio]),.form select,.form textarea { min-width:0; }
+  .form .check input { flex-shrink:0; }
+  dialog { max-height:calc(100dvh - 24px); max-width:calc(100% - 16px); padding:18px; }
+  #toast { bottom:calc(16px + env(safe-area-inset-bottom)); }
+}
+@media(max-width:520px) {
+  main { padding:20px 12px 32px; }
+  .stats,.kpis { grid-template-columns:minmax(0,1fr); }
+  .stats strong { font-size:28px; overflow-wrap:anywhere; }
+  .section-head>.button,.job-list li>.button { width:100%; }
+  .page-head>.actions { flex-direction:column; }
+  .actions>.button { min-width:0; white-space:normal; }
+  .page-head h1 { font-size:28px; }
+}

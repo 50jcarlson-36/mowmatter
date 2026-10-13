@@ -174,6 +174,20 @@
     const dialog = document.getElementById("dialog"),
       content = document.getElementById("dialog-content");
     content.innerHTML = `<div class="invoice-actions"><button class="button primary" id="print-invoice">Print / Save PDF</button></div>${i.html}`;
+    // Keep older server-rendered invoices readable while preserving table semantics.
+    content.querySelectorAll('.invoice-document table').forEach(table => {
+      table.setAttribute('role', 'table');
+      const headings = [...table.querySelectorAll('thead th')].map(th => {
+        th.setAttribute('scope', 'col');
+        th.setAttribute('role', 'columnheader');
+        return th.textContent;
+      });
+      table.querySelectorAll('tr').forEach(row => row.setAttribute('role', 'row'));
+      table.querySelectorAll('tbody tr').forEach(row => [...row.cells].forEach((cell, index) => {
+        cell.dataset.label = headings[index] || '';
+        cell.setAttribute('role', 'cell');
+      }));
+    });
     document.getElementById("print-invoice").onclick = () => window.print();
     dialog.showModal();
   }

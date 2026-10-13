@@ -67,6 +67,33 @@
 .invoice-document {
   overflow-wrap: anywhere;
 }
+/* A receipt/invoice is a reading task, not a miniature desktop page. */
+.customer-account { width:100%; min-width:0; overflow-wrap:anywhere; }
+.customer-account header { height:auto; min-height:80px; }
+.customer-account header h1 { margin:0; font-size:clamp(24px,5vw,32px); line-height:1.2; }
+.customer-account main { padding:24px 0; }
+.invoice-document { font:16px/1.6 Arial,Helvetica,sans-serif; }
+.invoice-document img { max-width:100%; height:auto; }
+.invoice-document h1 { font-size:clamp(24px,5vw,32px); line-height:1.2; }
+.invoice-document h2 { font-size:clamp(22px,4vw,28px); line-height:1.25; }
+.invoice-document td,.invoice-document th { padding:12px 8px; vertical-align:top; }
+.invoice-document td:last-child { white-space:nowrap; }
+.invoice-actions { display:flex; flex-wrap:wrap; gap:12px; margin:12px 0 20px; }
+@media screen and (max-width:600px) {
+  .customer-account { padding:12px; }
+  .customer-account header { padding:16px; gap:12px; border-radius:12px; }
+  .customer-account .card { padding:18px; }
+  .customer-account .actions > .button,.customer-account .job-list .button { width:100%; }
+  #dialog:has(.invoice-document) { width:calc(100% - 16px); max-width:none; padding:16px; }
+  .invoice-document { padding:16px!important; }
+  .invoice-actions { clear:both; }
+  .invoice-actions .button { width:100%; }
+  /* Also reflow invoices returned by older deployed templates. */
+  .invoice-document table,.invoice-document tbody,.invoice-document tr,.invoice-document td { display:block; width:100%; }
+  .invoice-document thead { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+  .invoice-document td { white-space:normal; padding:10px 0; }
+  .invoice-document td::before { content:attr(data-label); display:block; font-size:13px; font-weight:700; color:#52665a; }
+}
 @media print {
   body:has(.invoice-document) * {
     visibility: hidden;

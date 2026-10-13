@@ -59,6 +59,16 @@ const wait = () => new Promise((r) => setTimeout(r, 20));
     w.document.querySelector(".job-list input").value,
     /business=co&customer=cu/,
   );
+  const dialog = w.document.createElement('dialog');
+  dialog.id = 'dialog';
+  dialog.innerHTML = '<div id="dialog-content"></div>';
+  dialog.showModal = () => { dialog.open = true; };
+  w.document.body.append(dialog);
+  w.MowBusiness.showInvoice({html:'<article class="invoice-document"><table><thead><tr><th>Service</th><th>Date</th><th>Amount</th></tr></thead><tbody><tr><td>Mowing</td><td>2026-10-13</td><td>$125.00</td></tr></tbody></table></article>'});
+  assert(dialog.open);
+  assert.deepEqual([...dialog.querySelectorAll('td')].map(td => td.dataset.label), ['Service', 'Date', 'Amount']);
+  assert.equal(dialog.querySelector('table').getAttribute('role'), 'table');
+  assert.equal(dialog.querySelector('td:last-child').textContent, '$125.00');
   w.close();
   console.log(
     "PASS: branding preview, safe rendering, accessible colors, saved preferences and scoped customer links",

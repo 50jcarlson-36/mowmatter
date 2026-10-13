@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.102.0";
-import { normalizeBrand, portalURL, invoiceHTML } from "./model.mjs";
+import { normalizeBrand, portalURL, invoiceHTML, invoiceEmailHTML } from "./model.mjs";
 const origins = new Set([
   "https://office.mowmatter.com",
   "https://mowmatter-office.onrender.com",
@@ -312,7 +312,7 @@ Deno.serve(async (req) => {
                 ? { reply_to: invoice.snapshot.branding.email }
                 : {}),
               subject: `Invoice MM-${invoice.number} — ${invoice.snapshot.business}`,
-              html: invoiceHTML(invoice, link),
+              html: invoiceEmailHTML(invoice, link),
               text: `Invoice MM-${invoice.number}: $${(invoice.amount_cents / 100).toFixed(2)}. Manage your account: ${link}`,
             }),
             signal: AbortSignal.timeout(10000),

@@ -56,5 +56,31 @@ export function invoiceHTML(invoice, link) {
     style: "currency",
     currency: "USD",
   }).format(invoice.amount_cents / 100);
-  return `<article class="invoice-document" style="border-top:6px solid ${color};padding:24px;background:white;color:#172820">${logo}<h1>${escape(s.business)}</h1><p>${escape(b.tagline)}</p><p>${escape(b.address)}<br>${escape(b.phone)} · ${escape(b.email)}</p><hr><h2>Invoice MM-${escape(invoice.number)}</h2><p>Issued ${escape(invoice.created_at.slice(0, 10))}</p><p><b>Bill to: ${escape(s.customer)}</b><br>${escape(s.address)}</p><table style="width:100%;text-align:left"><thead><tr><th>Service</th><th>Date</th><th>Amount</th></tr></thead><tbody><tr><td>${escape((s.services || []).join(", "))}</td><td>${escape(s.service_date)}</td><td>${escape(amount)}</td></tr></tbody></table><h2>Invoice total: ${escape(amount)}</h2><p>Payment status is tracked separately. This invoice is not a receipt.</p><p>${escape(b.invoice_note)}</p><p style="white-space:pre-wrap">${escape(b.invoice_terms)}</p><p><a href="${escape(link)}">Manage your account</a></p><footer style="margin-top:32px;border-top:1px solid #ddd;padding-top:16px"><img src="https://office.mowmatter.com/brand-icon.png" alt="" width="28" height="28" style="vertical-align:middle;margin-right:8px"><small>Powered by <b>MowMatter</b></small></footer></article>`;
+  // Single-column, inline-styled layout also works in email clients without media queries.
+  const label = "margin:0 0 4px;font-size:13px;font-weight:700;color:#52665a";
+  const value = "margin:0 0 20px;font-size:16px;line-height:1.6;overflow-wrap:anywhere;word-break:break-word";
+  const contact = [b.phone, b.email].filter(Boolean).map(escape).join(" · ");
+  return `<article class="invoice-document" style="box-sizing:border-box;width:100%;max-width:640px;margin:0 auto;border-top:6px solid ${color};padding:20px;background:white;color:#172820;font:16px/1.6 Arial,Helvetica,sans-serif;overflow-wrap:anywhere;word-break:break-word">
+${logo}
+<h1 style="margin:12px 0;font-size:26px;line-height:1.25">${escape(s.business)}</h1>
+${b.tagline ? `<p style="${value}">${escape(b.tagline)}</p>` : ""}
+<p style="${value}">${escape(b.address)}${b.address && contact ? "<br>" : ""}${contact}</p>
+<hr style="border:0;border-top:1px solid #dce5df;margin:24px 0">
+<h2 style="margin:0 0 8px;font-size:24px;line-height:1.3">Invoice MM-${escape(invoice.number)}</h2>
+<p style="${value}">Issued ${escape(invoice.created_at.slice(0, 10))}</p>
+<dl style="margin:0">
+<dt style="${label}">Bill to</dt><dd style="${value}"><b>${escape(s.customer)}</b><br>${escape(s.address)}</dd>
+<dt style="${label}">Service</dt><dd style="${value}">${escape((s.services || []).join(", "))}</dd>
+<dt style="${label}">Service date</dt><dd style="${value}">${escape(s.service_date)}</dd>
+</dl>
+<div style="border-top:1px solid #dce5df;border-bottom:1px solid #dce5df;padding:18px 0;margin:24px 0"><p style="${label}">Invoice total</p><p style="margin:0;font-size:28px;line-height:1.3;font-weight:700">${escape(amount)}</p></div>
+<p style="${value}">Payment status is tracked separately. This invoice is not a receipt.</p>
+<p style="${value}">${escape(b.invoice_note)}</p>
+<p style="${value};white-space:pre-wrap">${escape(b.invoice_terms)}</p>
+<p style="margin:24px 0"><a href="${escape(link)}" style="display:block;padding:14px 16px;border-radius:8px;background:#174d36;color:#ffffff;text-align:center;text-decoration:none;font-weight:700;line-height:1.5">Manage your account</a></p>
+<footer style="margin-top:32px;border-top:1px solid #ddd;padding-top:16px"><img src="https://office.mowmatter.com/brand-icon.png" alt="" width="28" height="28" style="vertical-align:middle;margin-right:8px"><small>Powered by <b>MowMatter</b></small></footer></article>`;
+}
+
+export function invoiceEmailHTML(invoice, link, reminder = false) {
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invoice MM-${escape(invoice.number)}</title></head><body style="margin:0;padding:12px;background:#f3f7f4;font:16px/1.6 Arial,Helvetica,sans-serif;color:#172820">${reminder ? '<p style="max-width:640px;margin:0 auto 16px">This is a reminder for your outstanding invoice. If you recently paid, contact your provider before paying again.</p>' : ''}${invoiceHTML(invoice, link)}</body></html>`;
 }

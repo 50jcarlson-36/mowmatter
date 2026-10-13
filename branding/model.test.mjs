@@ -1,8 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   normalizeBrand,
   invoiceHTML,
+  invoiceEmailHTML,
   portalURL,
 } from "../crew/supabase/functions/mowmatter-business/model.mjs";
 const brand = {
@@ -52,4 +54,17 @@ test("invoice uses issued snapshot, escapes content, includes a customer scoped 
   assert.match(html, /customer=customer/);
   assert.match(html, /Powered by/);
   assert.match(html, /not a receipt/);
+  assert.match(html, /<dt[^>]*>Service<\/dt>/);
+  assert.match(html, /<dt[^>]*>Service date<\/dt>/);
+  assert(!html.includes("<table"), "Invoice details must reflow without a desktop-width table");
+  const email = invoiceEmailHTML(i, portalURL("company", "customer"), true);
+  assert.match(email, /name="viewport" content="width=device-width,initial-scale=1"/);
+  assert.match(email, /reminder for your outstanding invoice/);
+  assert(email.includes(html));
+});
+test("emailed and browser invoices share the same responsive template", () => {
+  assert.equal(
+    readFileSync(new URL("../crew/supabase/functions/mowmatter-business/model.mjs", import.meta.url), "utf8"),
+    readFileSync(new URL("../supabase/functions/mowmatter-invoice-delivery/model.mjs", import.meta.url), "utf8"),
+  );
 });

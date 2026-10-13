@@ -1,5 +1,5 @@
 import {createClient} from 'npm:@supabase/supabase-js@2.102.0';
-import {invoiceHTML,portalURL} from './model.mjs';
+import {invoiceEmailHTML,portalURL} from './model.mjs';
 const allowed=new Set(['https://office.mowmatter.com','https://mowmatter-office.onrender.com']);
 Deno.serve(async(req)=>{
  const origin=req.headers.get('origin')||'',headers={'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':allowed.has(origin)?origin:'https://office.mowmatter.com','Access-Control-Allow-Headers':'authorization,apikey,content-type','Access-Control-Allow-Methods':'POST,OPTIONS','Vary':'Origin'};
@@ -27,7 +27,7 @@ Deno.serve(async(req)=>{
   try{
    const customer=await checked(db.from('mow_customers').select('email').eq('id',i.customer_id).eq('company_id',i.company_id).single());
    const link=portalURL(i.company_id,i.customer_id),subject=(stage?'Payment reminder: ':'Invoice ')+`MM-${i.number} — ${i.snapshot.business}`;
-   const html=(stage?'<p>This is a reminder for your outstanding invoice. If you recently paid, contact your provider before paying again.</p>':'')+invoiceHTML(i,link);
+   const html=invoiceEmailHTML(i,link,Boolean(stage));
    const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:'Bearer '+key,'Content-Type':'application/json','Idempotency-Key':stage?'mowmatter-invoice-'+i.id+'-reminder-'+stage:'mowmatter-invoice-'+i.id},body:JSON.stringify({from:'MowMatter <noreply@mowmatter.com>',to:[customer.email],...(i.snapshot.branding?.email?{reply_to:i.snapshot.branding.email}:{}),subject,html,text:`${stage?'Payment reminder. ':''}Invoice MM-${i.number}: $${(i.amount_cents/100).toFixed(2)}. Review and pay in your account: ${link}`}),signal:AbortSignal.timeout(10000)});
    if(response.ok)providerId=(await response.json()).id;
   }catch{}

@@ -310,3 +310,11 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - Owner approved the generated “More lawns. Less busywork.” campaign image for the homepage shared-link preview. Added versioned `assets/mowmatter-social-more-lawns-v1.jpg` in canonical `web/dist` and mirrored root assets; JPEG 1200 × 628. Original artwork is conceptual, including the notification illustration, not evidence of SMS activation.
 - Homepage now declares canonical URL, Open Graph title/description/image/dimensions/alt text and a Twitter large-image card in initial HTML. Previously the homepage declared neither image, allowing messaging clients to select a yard photo.
 - Release uses the existing Cloudflare Workers Builds publisher via main. Verify apex HTML metadata and public JPEG bytes after publication; existing message threads may retain cached previews. No API, Office, Crew, DNS, messaging flags or billing changes.
+
+
+## Mobile layout corrections — 2026-10-13
+
+- Audited 47 HTML pages plus invoice dialogs at 320, 390, 768 and 1440 CSS pixels (192 local Chromium checks). Final tested states have no page-level horizontal overflow. Synthetic local data; external transactional flows and physical Safari/email clients are not certified. Detailed scope and limits: docs/MOBILE-LAYOUT-AUDIT-2026-10-13.md.
+- Corrected invoice/dialog typography and reflow, legacy invoice labels, Accounting summary overflow, customer-account padding, wrapping Office actions and Crew safe-area/touch controls. Email invoices now use the same single-column model plus viewport wrapper. No payment, SMS, customer-record or auth-policy changes.
+- Office/Crew tests and builds, branding/model/access tests, source and mirror checks passed. Render browser is signed out; frontend source publication alone is not an Office/Crew production release. Supabase Business and invoice-delivery require matching model deployments with existing custom auth preserved.
+- Shared-link artwork from 9f33079 was independently verified live on the apex; both initial HTML and JPEG matched repository bytes, and Cloudflare build/quality checks succeeded.
