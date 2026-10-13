@@ -24,6 +24,7 @@ export function createRouteNotices({ backend, transport }) {
     try {
       const result = await transport.send({
         to: claim.phone,
+        idempotencyKey: "route:" + claim.id,
         body: routeNoticeBody(claim),
       });
       await backend.db("mow_route_notices?id=eq." + claim.id, "PATCH", {
