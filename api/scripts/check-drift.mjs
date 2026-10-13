@@ -8,6 +8,7 @@ const copies = [
     "crew-app.html",
     "lawn-care.html",
     "customer-progress.css",
+    "style.css",
   ].map((name) => ["web/dist/" + name, name]),
   ...[
     "privacy-controls.js",

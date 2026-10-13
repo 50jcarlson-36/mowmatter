@@ -1,5 +1,5 @@
 import {
-  invoiceHTML,
+  invoiceEmailHTML,
   portalURL,
   escape as brandEscape,
 } from "../mowmatter-business/model.mjs";
@@ -116,7 +116,7 @@ export async function deliverJobEmail(
       : null;
   if (invoice && link) {
     mail.subject = `Your lawn care invoice MM-${invoice.number} — ${company.name}`;
-    mail.html = invoiceHTML(invoice, link);
+    mail.html = invoiceEmailHTML(invoice, link);
     mail.text += `\nInvoice MM-${invoice.number}: $${(invoice.amount_cents / 100).toFixed(2)}\nManage your account: ${link}`;
   } else {
     const color = /^#[0-9a-f]{6}$/i.test(b.primary) ? b.primary : "#174d36";
