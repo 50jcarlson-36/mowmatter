@@ -234,3 +234,10 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - Migration drift confirmed: live history has 17 versions (20261004222330…20261011025922); repo has 3 files and 20261010144631 is not in live history. Several production tables/functions (mowmatter_leads, mowmatter_homeowner_requests, mowmatter_directory_listings, mowmatter_rate_limit, etc.) are not defined in the repo.
 - Live edge functions: capture v10, crew v8, activity v1, growth v2, business v3, invoice-delivery v1; all verify_jwt=false with in-function auth.
 - Public sites, Render, Stripe, Resend and Vonage were not reachable from the audit environment (network policy 403); their state is unverified by this audit.
+
+## Audit remediation prepared — 2026-10-13
+
+- The audited source lives on claude/mowmatter-code-audit-yzacsy; the earlier local payment-recovery checkout is older and has separate unfinished Bird edits. Remediation is prepared in an isolated workspace.
+- See docs/GO-LIVE-AUDIT-FIXES-2026-10-13.md for C1–C11 status and release order. Removed duplicate deploy.yml; existing Cloudflare Workers Builds remains the intended automatic marketing publisher.
+- Supabase read access succeeded: recovered all 17 original migration SQL records and captured a data-free public application schema (44 tables, 42 functions, four triggers). This does not reconcile migration history, validate a PostGIS restore, confirm backups or deploy any pending SQL.
+- B1–B4 remain commercial launch gates. C5 needs verified gateway IP provenance/CAPTCHA. Route notices remain disabled. No production writes, deployment, live payment or customer communication occurred in this remediation.

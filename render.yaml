@@ -1,0 +1,53 @@
+# Import only after review; existing Render services need these response headers applied.
+services:
+  - type: web
+    name: mowmatter-office
+    runtime: static
+    repo: https://github.com/50jcarlson-36/mowmatter
+    rootDir: office
+    buildCommand: test -s dist/index.html
+    staticPublishPath: dist
+    autoDeployTrigger: off
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: "nosniff"
+      - path: /*
+        name: Referrer-Policy
+        value: "strict-origin-when-cross-origin"
+      - path: /*
+        name: Strict-Transport-Security
+        value: "max-age=31536000"
+      - path: /*
+        name: Permissions-Policy
+        value: "camera=(self), geolocation=(self), microphone=()"
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors https://mowmatter.com https://www.mowmatter.com; script-src 'self' ; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://pzymmsfjgspvzbivzvkx.supabase.co; font-src 'self' data:; connect-src 'self' https://pzymmsfjgspvzbivzvkx.supabase.co wss://pzymmsfjgspvzbivzvkx.supabase.co https://mowmatter-property.onrender.com; frame-src 'none'; form-action 'self'; worker-src 'self' blob:; upgrade-insecure-requests"
+  - type: web
+    name: mowmatter-crew
+    runtime: static
+    repo: https://github.com/50jcarlson-36/mowmatter
+    rootDir: crew
+    buildCommand: test -s dist/index.html
+    staticPublishPath: dist
+    autoDeployTrigger: off
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: "nosniff"
+      - path: /*
+        name: Referrer-Policy
+        value: "strict-origin-when-cross-origin"
+      - path: /*
+        name: Strict-Transport-Security
+        value: "max-age=31536000"
+      - path: /*
+        name: Permissions-Policy
+        value: "camera=(self), geolocation=(self), microphone=()"
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' ; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://pzymmsfjgspvzbivzvkx.supabase.co; font-src 'self' data:; connect-src 'self' https://pzymmsfjgspvzbivzvkx.supabase.co wss://pzymmsfjgspvzbivzvkx.supabase.co https://mowmatter-property.onrender.com; frame-src 'none'; form-action 'self'; worker-src 'self' blob:; upgrade-insecure-requests"
+      - path: /*
+        name: X-Frame-Options
+        value: "DENY"

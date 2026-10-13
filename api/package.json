@@ -5,11 +5,12 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node --test server.test.mjs billing/billing.test.mjs commerce/*.test.mjs growth/checkout.test.mjs pricing/*.test.mjs ../branding/*.test.mjs ../crew/emails/email.test.mjs ../web/privacy.test.cjs",
+    "test": "node --test server.test.mjs security.test.mjs billing/*.test.mjs commerce/*.test.mjs growth/checkout.test.mjs pricing/*.test.mjs ../branding/*.test.mjs ../crew/emails/email.test.mjs ../web/privacy.test.cjs",
     "format": "prettier --write pricing commerce billing/homeowner.mjs scheduling operations weather scripts ../office/dist/*engine.mjs ../office/dist/setup-wizard.mjs ../office/dist/services-preview.* ../office/dist/operations.* ../web/dist/yard-insights.mjs",
     "format:check": "prettier --check pricing commerce billing/homeowner.mjs scheduling operations weather scripts ../office/dist/*engine.mjs ../office/dist/setup-wizard.mjs ../office/dist/services-preview.* ../office/dist/operations.* ../web/dist/yard-insights.mjs",
-    "check": "node scripts/check-drift.mjs && node scripts/check-source.mjs && npm run format:check && npm test",
-    "sync:assets": "node scripts/check-drift.mjs --sync"
+    "check": "node scripts/security-headers.mjs --check && node scripts/check-drift.mjs && node scripts/check-source.mjs && npm run format:check && npm test",
+    "sync:assets": "node scripts/check-drift.mjs --sync",
+    "headers": "node scripts/security-headers.mjs"
   },
   "engines": {
     "node": "22.x"
@@ -22,6 +23,7 @@
     "twilio": "6.1.2"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
     "jsdom": "30.1.2",
     "prettier": "3.6.2"
   }
