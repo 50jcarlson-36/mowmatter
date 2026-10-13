@@ -253,6 +253,7 @@ export function homeownerBilling({
       account: connection.account_id,
       request: {
         mode: "subscription",
+        managed_payments: { enabled: false },
         customer: s.stripe_customer,
         line_items: [
           {

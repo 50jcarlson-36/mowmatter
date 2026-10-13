@@ -455,6 +455,7 @@ test("Completed visit checkout uses stored price and paid-plan fee, never client
   assert.equal(input.payment_intent_data.metadata.fee_bps, "250");
   assert.equal(options.stripeAccount, "acct_operator");
   assert.equal(input.mode, "payment");
+  assert.deepEqual(input.managed_payments, { enabled: false });
 });
 test("Connect onboarding never creates account before activation", async () => {
   let made = false;
