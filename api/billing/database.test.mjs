@@ -20,7 +20,7 @@ async function fixture() {
     "api/billing/homeowner-schema.sql",
     "api/commerce/visit-proposals.sql",
     "api/commerce/visit-sms.sql",
-    "supabase/migrations/20261010144631_yard_weather_operations.sql",
+    "supabase/baseline/unrecorded-yard-weather-20261010144631.sql",
     "supabase/migrations/20261013155735_payment_recovery_p1.sql",
     "supabase/migrations/20261013155746_entitlements_and_crew_scope.sql",
   ])
