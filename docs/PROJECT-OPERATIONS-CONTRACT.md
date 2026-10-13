@@ -224,3 +224,13 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - Existing Office visit list remains available when dispatch schema is unavailable. Marketing includes a graphical communication preview and states that approach/schedule-change SMS are being activated.
 - Local Postgres and DOM checks passed for ownership, publication, progress, consent/opt-outs, duplicates, stale/overlap checks, reordering, secure service links and care navigation. No carrier delivery or real customer SMS was sent.
 - See docs/customer-progress-dispatch.md for exact activation order and verification limits. Restore Supabase write access; deploy API/Office/Crew together on Render; then enable the flag and verify an opted-in test route.
+
+
+## Go-live code audit — 2026-10-13
+
+- Full report: docs/GO-LIVE-AUDIT-2026-10-13.md (audited commit 3f5edbe). Verdict: code security model sound; not ready for full commercial go-live until blockers B1–B4 are closed.
+- Passed: `npm run check` 131/131 tests; `npm audit --omit=dev` 0 vulnerabilities; no committed secrets; every SQL function revoked from anon/authenticated.
+- Live Supabase (read-only): no anon/authenticated privileges on mow* tables/functions; advisors show only INFO RLS-no-policy (intended deny-all); mow-crew-proof private, mow-business-logos public; mow_dispatch_routes/mow_route_notices absent.
+- Migration drift confirmed: live history has 17 versions (20261004222330…20261011025922); repo has 3 files and 20261010144631 is not in live history. Several production tables/functions (mowmatter_leads, mowmatter_homeowner_requests, mowmatter_directory_listings, mowmatter_rate_limit, etc.) are not defined in the repo.
+- Live edge functions: capture v10, crew v8, activity v1, growth v2, business v3, invoice-delivery v1; all verify_jwt=false with in-function auth.
+- Public sites, Render, Stripe, Resend and Vonage were not reachable from the audit environment (network policy 403); their state is unverified by this audit.
