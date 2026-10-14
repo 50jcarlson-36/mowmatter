@@ -28,10 +28,14 @@
     const root = document.getElementById("dispatch-board");
     if (!root) return;
     const scope = { company_id: data.company.id };
+    let capabilities = { available: false };
     let state = { routes: [], notices: [] },
       error = "";
     try {
       state = await api("dispatch-status", scope);
+      capabilities = await api("route-capabilities", scope).catch(() => ({
+        available: false,
+      }));
     } catch (e) {
       error = e.message;
     }
@@ -85,7 +89,7 @@
                 },
               ),
             }));
-      root.innerHTML = `<section class="card"><div class="section-head"><h2>Your dispatch board</h2><button class="button primary" id="dispatch-new-job">+ One-time visit</button><a class="button" href="operations.html">Weather &amp; care suggestions</a></div><div class="actions"><label>Business time zone <select id="dispatch-zone">${[...new Set([timeZone, "America/New_York", "America/Chicago", "America/Denver", "America/Phoenix", "America/Los_Angeles", "Pacific/Honolulu", "America/Anchorage"])].map((zone) => `<option value="${esc(zone)}" ${zone === timeZone ? "selected" : ""}>${esc(zone.replaceAll("_", " "))}</option>`).join("")}</select></label><label>Starting date <input id="dispatch-day" type="date" value="${esc(day)}"></label><button class="button" data-mode="day" aria-pressed="${mode === "day"}">Crews today</button><button class="button" data-mode="week" aria-pressed="${mode === "week"}">Next 7 days</button></div><p class="help">Drag pending cards between columns, or use Move. Reorder with the arrows, then publish the remaining route. Customer date/time changes queue an opted-in SMS. Moves affect this visit only.</p><p role="status" id="dispatch-status">${esc(error)}</p><div class="dispatch-columns">${columns
+      root.innerHTML = `<section class="card"><div class="section-head"><h2>Your dispatch board</h2><button class="button primary" id="dispatch-new-job">+ One-time visit</button><a class="button" href="operations.html">Weather &amp; care suggestions</a></div><div class="actions"><label>Business time zone <select id="dispatch-zone">${[...new Set([timeZone, "America/New_York", "America/Chicago", "America/Denver", "America/Phoenix", "America/Los_Angeles", "Pacific/Honolulu", "America/Anchorage"])].map((zone) => `<option value="${esc(zone)}" ${zone === timeZone ? "selected" : ""}>${esc(zone.replaceAll("_", " "))}</option>`).join("")}</select></label><label>Starting date <input id="dispatch-day" type="date" value="${esc(day)}"></label><button class="button" data-mode="day" aria-pressed="${mode === "day"}">Crews today</button><button class="button" data-mode="week" aria-pressed="${mode === "week"}">Next 7 days</button></div><p class="help">${capabilities.available ? "Route planner: Google Maps road estimates · up to 12 stops per crew." : "Road route planning is awaiting provider activation. Manual dispatch is available."}</p><p class="help">Drag pending cards between columns, or use Move. Reorder with the arrows, then publish the remaining route. Customer date/time changes queue an opted-in SMS. Moves affect this visit only.</p><p role="status" id="dispatch-status">${esc(error)}</p><div class="dispatch-columns">${columns
         .map((c) => {
           const jobs = c.id
             ? list(c.id, c.date)
@@ -100,7 +104,7 @@
                 (r) => r.crew_id === c.id && r.service_date === c.date,
               ),
             dirty = c.id && drafts.has(c.id + ":" + c.date);
-          return `<section class="dispatch-column" data-crew="${esc(c.id || "")}" data-day="${c.date}" aria-label="${esc(c.label)}"><h3>${esc(c.label)}</h3><p class="help">${jobs.length} stops · ${minutes} service minutes (travel excluded)${minutes > 480 ? " · Over 8 service hours" : ""}</p>${c.id ? `<span class="pill">${dirty ? "Unpublished order" : published ? "Published route" : "Needs publishing"}</span><button class="button" data-publish="${esc(c.id)}" ${!jobs.length ? "disabled" : ""}>Publish route</button>` : ""}${
+          return `<section class="dispatch-column" data-crew="${esc(c.id || "")}" data-day="${c.date}" aria-label="${esc(c.label)}"><h3>${esc(c.label)}</h3><p class="help">${jobs.length} stops · ${minutes} service minutes (travel excluded)${minutes > 480 ? " · Over 8 service hours" : ""}</p>${c.id ? `<span class="pill">${dirty ? "Unpublished order" : published ? "Published route" : "Needs publishing"}</span><button class="button" data-optimize="${esc(c.id)}" ${!capabilities.available || jobs.length < 2 || jobs.length > 12 || jobs.some((j) => j.status !== "scheduled") ? "disabled" : ""}>Optimize route</button><button class="button" data-publish="${esc(c.id)}" ${!jobs.length ? "disabled" : ""}>Publish route</button>` : ""}${
             jobs
               .map(
                 (j, index) =>
@@ -174,6 +178,9 @@
             render();
           }),
       );
+      root
+        .querySelectorAll("[data-optimize]")
+        .forEach((b) => (b.onclick = () => optimize(b.dataset.optimize)));
       root.querySelectorAll("[data-publish]").forEach(
         (b) =>
           (b.onclick = async () => {
@@ -217,6 +224,83 @@
             });
         };
       });
+    }
+    function optimize(crew) {
+      const dialog = document.getElementById("dialog"),
+        content = document.getElementById("dialog-content"),
+        routeDay = day;
+      const jobs = list(crew, routeDay);
+      content.innerHTML = `<h2>Plan this crew’s route</h2><p>${esc(routeDay)} · ${esc(timeZone)}</p><form id="route-plan" class="form"><label>Start and return address<input name="depot" required minlength="10" maxlength="300" autocomplete="street-address" placeholder="Street, city, state, ZIP"></label><div class="route-plan-hours"><label>Depart at<input name="start_time" type="time" required value="08:00"></label><label>Return by<input name="end_time" type="time" required value="17:00"></label></div><fieldset><legend>Which visits have flexible arrival times?</legend><p>Leave confirmed appointments unchecked. Only select visits whose timing you may change. All visits must fit, including travel, service and return to base.</p>${jobs.map((j) => `<label class="route-plan-choice"><input type="checkbox" name="flexible_ids" value="${esc(j.id)}"><span>${esc(j.address)}<small>${esc(j.scheduled_time.slice(0, 5))} · ${j.planned_minutes || 30} service minutes</small></span></label>`).join("")}</fieldset><p>Addresses are sent to Google Maps to estimate road travel. <a href="https://maps.google.com/help/terms_maps/" target="_blank" rel="noopener">Google Maps terms</a> · <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google privacy policy</a>. Live traffic, weather, breaks and trailer restrictions are not included. Each stop includes a 5-minute buffer. Allow time for breaks when choosing your workday.</p><p role="status"></p><button class="button primary">Calculate route</button></form><section id="route-result" aria-live="polite"></section>`;
+      dialog.showModal();
+      const form = content.querySelector("form"),
+        result = content.querySelector("#route-result");
+      let proposal = null;
+      form.oninput = () => {
+        proposal = null;
+        result.replaceChildren();
+      };
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        const button = e.submitter;
+        button.disabled = true;
+        proposal = null;
+        result.replaceChildren();
+        form.querySelector("[role=status]").textContent =
+          "Calculating road travel and checking appointments…";
+        const values = new FormData(form);
+        // Freeze inputs while the request is running so results match the reviewed constraints.
+        for (const el of form.elements) el.disabled = true;
+        try {
+          const r = await api("route-optimize", {
+            ...scope,
+            crew_id: crew,
+            service_date: routeDay,
+            time_zone: timeZone,
+            depot: values.get("depot"),
+            start_time: values.get("start_time"),
+            end_time: values.get("end_time"),
+            flexible_ids: values.getAll("flexible_ids"),
+          });
+          proposal = r.proposal;
+          form.querySelector("[role=status]").textContent =
+            "Review the full route below. Nothing has changed yet.";
+          result.innerHTML = `<h3>Before → proposed route</h3><button type="button" class="button" id="route-revise">Change planning settings</button><div class="route-plan-comparison"><p><strong>Current order</strong><br>${r.before.drive_minutes} drive minutes · ${r.before.miles} miles<br>${r.before.feasible ? "Fits these constraints" : "Does not fit these constraints"}</p><p><strong>Proposed order</strong><br>${r.after.drive_minutes} drive minutes · ${r.after.miles} miles<br>Return by ${esc(r.return_time)}</p></div><p>${r.service_minutes} service minutes · travel estimates by <span class="maps-attribution" translate="no">Google Maps</span></p><ol class="route-plan-stops">${r.jobs.map((j) => `<li><strong>${esc(j.address)}</strong><br>${esc(j.original_time)} → ${esc(j.scheduled_time)} · ${j.flexible ? "Flexible" : "Fixed appointment"}<br><small>${j.drive_minutes} min drive + 5 min buffer · ${j.service_minutes} min service</small></li>`).join("")}</ol><p>${esc(r.notice)}</p><p>Publishing updates crew order and the flexible appointment times shown above. Contact customers about changes; SMS delivery may be disabled. Preview expires in 15 minutes.</p><label class="route-plan-choice"><input id="route-review" type="checkbox"><span>I reviewed the stops, customer agreements, access and breaks.</span></label><p role="status"></p><button type="button" class="button primary" id="route-apply" disabled>Approve &amp; publish route</button>`;
+          form.hidden = true;
+          result.querySelector("#route-revise").onclick = () => {
+            proposal = null;
+            form.hidden = false;
+            result.replaceChildren();
+            form.elements.depot.focus();
+          };
+          result.scrollIntoView?.({ block: "start" });
+          const apply = result.querySelector("#route-apply");
+          result.querySelector("#route-review").onchange = (e) =>
+            (apply.disabled = !e.target.checked);
+          apply.onclick = async () => {
+            apply.disabled = true;
+            try {
+              await api("route-publish", {
+                ...scope,
+                proposal,
+                confirm_review: true,
+              });
+              drafts.delete(crew + ":" + routeDay);
+              window.MowDispatchDirty = drafts.size > 0;
+              dialog.close();
+              await reload();
+            } catch (err) {
+              result.querySelector("[role=status]").textContent =
+                err.message +
+                " If the visit list changed, calculate a fresh route.";
+              apply.disabled = false;
+            }
+          };
+        } catch (err) {
+          form.querySelector("[role=status]").textContent = err.message;
+        } finally {
+          for (const el of form.elements) el.disabled = false;
+        }
+      };
     }
     function move(j, destination = {}) {
       const dialog = document.getElementById("dialog"),

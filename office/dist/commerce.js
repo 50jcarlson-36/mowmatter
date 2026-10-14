@@ -32,7 +32,9 @@
           "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(20000),
+        signal: AbortSignal.timeout(
+          action === "route-optimize" ? 60000 : 20000,
+        ),
       },
     );
     const d = await r.json();
@@ -351,7 +353,9 @@
           "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(20000),
+        signal: AbortSignal.timeout(
+          action === "route-optimize" ? 60000 : 20000,
+        ),
       },
     );
     const d = await r.json();

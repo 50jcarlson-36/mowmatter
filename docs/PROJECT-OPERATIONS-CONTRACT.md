@@ -372,3 +372,11 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - 240 local viewport checks at five widths completed without page-level horizontal overflow; all Office suites and 12 targeted scheduling/dispatch/route-notice tests passed. Replay and reduced-motion verified. No actual route/customer/message changes.
 - Live routing remains owner-reviewed dispatch; full AI drive-time optimization is in development. Sample ordering is a fictional-coordinate proximity heuristic. Do not sell the new illustration as activated live optimization or measured savings.
 - Office Render dep-db7mmgeq1p3s73d1k93g live at 11:45:29 UTC. Public Office CSS/JS/route CSS and marketing homepage/style/route JS match release bytes. See docs/NAVIGATION-ROUTING-2026-10-14.md for scope and limitations.
+
+## Operational routing build — October 14
+
+- Added Google Routes road-matrix adapter, bounded constrained route planner, owner preview/approval and signed 15-minute proposals. Full scheduled route (2–12 stops), explicit per-visit flexibility, fixed appointments, service time, buffers and return-to-base deadline are checked. Typical travel only; no live traffic/weather/trailer constraints or multi-crew balancing.
+- New service-role-only quota/atomic publishing migration `20261014115944_operational_route_planning.sql` is locally tested but NOT applied to production: connector rejected the production schema inspection. Do not infer production database verification.
+- Activation requires server-side GOOGLE_ROUTES_API_KEY and MOW_ROUTING_ENABLED=true after migration and real provider validation; default off. Key presence/Google billing entitlement remains unverified. Google sign-in credentials are unrelated.
+- Crew published order is independent of disabled SMS; owner-reviewed schedule changes still follow existing consent/transport gates. No customer visits or communications were modified during testing.
+- See docs/OPERATIONAL-ROUTING-2026-10-14.md for test evidence, limits and activation checklist. Do not call routing launch-ready before live owner-to-crew rehearsal.

@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node --test server.test.mjs security.test.mjs billing/*.test.mjs commerce/*.test.mjs growth/checkout.test.mjs pricing/*.test.mjs ../branding/*.test.mjs ../crew/emails/email.test.mjs ../web/privacy.test.cjs",
-    "format": "prettier --write pricing commerce billing/*.mjs scheduling operations weather scripts ../office/dist/*engine.mjs ../office/dist/setup-wizard.mjs ../office/dist/services-preview.* ../office/dist/operations.* ../web/dist/yard-insights.mjs ../crew/server/*.mjs ../crew/supabase/functions/mowmatter-crew/index.ts ../crew/supabase/functions/mowmatter-crew/job-window.mjs",
-    "format:check": "prettier --check pricing commerce billing/*.mjs scheduling operations weather scripts ../office/dist/*engine.mjs ../office/dist/setup-wizard.mjs ../office/dist/services-preview.* ../office/dist/operations.* ../web/dist/yard-insights.mjs ../crew/server/*.mjs ../crew/supabase/functions/mowmatter-crew/index.ts ../crew/supabase/functions/mowmatter-crew/job-window.mjs",
+    "test": "node --test server.test.mjs security.test.mjs billing/*.test.mjs commerce/*.test.mjs routing/*.test.mjs growth/checkout.test.mjs pricing/*.test.mjs ../branding/*.test.mjs ../crew/emails/email.test.mjs ../web/privacy.test.cjs",
+    "format": "prettier --write pricing commerce routing billing/*.mjs scheduling operations weather scripts ../office/dist/*engine.mjs ../office/dist/setup-wizard.mjs ../office/dist/services-preview.* ../office/dist/operations.* ../web/dist/yard-insights.mjs ../crew/server/*.mjs ../crew/supabase/functions/mowmatter-crew/index.ts ../crew/supabase/functions/mowmatter-crew/job-window.mjs",
+    "format:check": "prettier --check pricing commerce routing billing/*.mjs scheduling operations weather scripts ../office/dist/*engine.mjs ../office/dist/setup-wizard.mjs ../office/dist/services-preview.* ../office/dist/operations.* ../web/dist/yard-insights.mjs ../crew/server/*.mjs ../crew/supabase/functions/mowmatter-crew/index.ts ../crew/supabase/functions/mowmatter-crew/job-window.mjs",
     "check": "node scripts/security-headers.mjs --check && node scripts/check-drift.mjs && node scripts/check-source.mjs && npm run format:check && npm test",
     "sync:assets": "node scripts/check-drift.mjs --sync",
     "replay:payments": "node scripts/replay-payments.mjs",

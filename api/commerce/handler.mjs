@@ -1,3 +1,4 @@
+import { createRouting } from "../routing/service.mjs";
 import { privatePhoto } from "../operations/photo-insights.mjs";
 import { createSMS } from "./sms.mjs";
 import { dispatchAction, customerServiceStatus } from "./dispatch.mjs";
@@ -5,6 +6,7 @@ import { backend, fail, jsonBody, uuid } from "../operations/access.mjs";
 export function createCommerce(options = {}) {
   const b = options.backend || backend(options);
   const sms = createSMS({ ...options, backend: b });
+  const routing = createRouting({ ...options, backend: b });
   const routeEnabled =
     (options.env || process.env).MOW_ROUTE_NOTICES_ENABLED === "true";
   return async (req, res, send) => {
@@ -27,16 +29,25 @@ export function createCommerce(options = {}) {
             user.id,
         );
         if (!membership.length) throw fail("Crew access denied", 403);
-        const positions = routeEnabled
-          ? await b.db(
-              "mow_crew_jobs?select=id,route_position&company_id=eq." +
-                cid +
-                "&assigned_to=eq." +
-                user.id +
-                "&cancelled_at=is.null&limit=500",
-            )
-          : [];
-        send(200, { positions, enabled: routeEnabled });
+        const positions = await b.db(
+          "mow_crew_jobs?select=id,route_position,service_date&company_id=eq." +
+            cid +
+            "&assigned_to=eq." +
+            user.id +
+            "&cancelled_at=is.null&limit=500",
+        );
+        const published = await b.db(
+          "mow_dispatch_routes?select=service_date&company_id=eq." +
+            cid +
+            "&crew_id=eq." +
+            user.id,
+        );
+        const dates = new Set(published.map((r) => r.service_date));
+        for (const job of positions)
+          job.route_position = dates.has(job.service_date)
+            ? job.route_position
+            : null;
+        send(200, { positions, enabled: true });
         return true;
       }
       if (path.endsWith("/send-visit-sms")) {
@@ -88,6 +99,14 @@ export function createCommerce(options = {}) {
           throw fail("Customer access denied", 403);
       }
       const action = path.split("/").pop();
+      if (
+        ["route-capabilities", "route-optimize", "route-publish"].includes(
+          action,
+        )
+      ) {
+        send(200, await routing(user, cid, action, input));
+        return true;
+      }
       if (action === "service-status") {
         send(200, await customerServiceStatus(b, cid, cu));
         return true;
