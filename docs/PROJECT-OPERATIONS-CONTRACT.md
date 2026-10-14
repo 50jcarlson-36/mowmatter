@@ -358,3 +358,10 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 
 - Release `1446613c2b1f569af825935522b4c5d7325533f0`: all 164 API tests and GitHub quality passed; Cloudflare Workers Builds succeeded. Crew Edge version 11 ACTIVE with all six files matching read-back and anonymous request still 401.
 - Office initial deployment `dep-db7bq02vcj2c73d1p310` was live but retired asset persisted. Cleared-build-cache deployment `dep-db7bqulg1s2s739tvt40` live at 23:23:58 UTC; public retired script now 404 and login HTML matches source. No API or Crew static deployment needed.
+
+## SEO repair — October 14, 2026
+
+- Live sitemap was 404; 21/22 public pages lacked canonicals and all lacked JSON-LD. Release da39ab114eb0f4090fb098d528a5d211b8629991 adds sitemap (11 indexable URLs), robots sitemap directive, metadata/schema across 22 pages and informational llms.txt. Existing noindex legal/utility pages preserved; login and brand reference excluded. Root marketing mirrors updated.
+- GitHub quality and Workers Builds passed. Final live crawl confirms 22/22 HTTP 200 with canonical, description and JSON-LD; no broken relative HTML links. Three discovery files return 200. No search-ranking or rich-result guarantee.
+- Search Console/Bing ownership/submission/coverage and field Core Web Vitals remain unverified. HTTPS www redirects to apex; HTTP returned 200 in this audit environment, requiring separate Cloudflare Always Use HTTPS review. No dashboard setting changed.
+- DMARC independently checked earlier today after owner's DNS repair: Google and Cloudflare resolvers both return one policy preserving Cloudflare/Bird report recipients. Provider clearance not independently verified.
