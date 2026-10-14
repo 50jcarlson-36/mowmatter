@@ -1,0 +1,15 @@
+# MowMatter
+
+> Lawn care business software for solo operators, small crews and their homeowners.
+
+## Public product information
+
+- [Ai Intelligence](https://mowmatter.com/ai-intelligence)
+- [Contact](https://mowmatter.com/contact)
+- [Crew App](https://mowmatter.com/crew-app)
+- [Platform](https://mowmatter.com/platform)
+- [Pricing](https://mowmatter.com/pricing)
+
+## Availability
+
+Crew is a mobile web app. Native apps and Instant Quotes are not released. SMS availability depends on provider activation and customer opt-in. Consult the linked product pages for current limitations.
