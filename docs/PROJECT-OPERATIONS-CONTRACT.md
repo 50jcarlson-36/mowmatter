@@ -365,3 +365,10 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - GitHub quality and Workers Builds passed. Final live crawl confirms 22/22 HTTP 200 with canonical, description and JSON-LD; no broken relative HTML links. Three discovery files return 200. No search-ranking or rich-result guarantee.
 - Search Console/Bing ownership/submission/coverage and field Core Web Vitals remain unverified. HTTPS www redirects to apex; HTTP returned 200 in this audit environment, requiring separate Cloudflare Always Use HTTPS review. No dashboard setting changed.
 - DMARC independently checked earlier today after owner's DNS repair: Google and Cloudflare resolvers both return one policy preserving Cloudflare/Bird report recipients. Provider clearance not independently verified.
+
+## Navigation, route comparison and sidebar release — October 14
+
+- Application efd699ce369d17219b4fcf5b9cbd1b0f2dc5e749 adds Login in public main nav and Create Account labels, illustrative animated before/after route comparisons across homepage/product pages and Office sample maps, plus tablet/nav wrapping and Office sidebar overlap fixes. New route CSS/root mirrors checked by drift gate.
+- 240 local viewport checks at five widths completed without page-level horizontal overflow; all Office suites and 12 targeted scheduling/dispatch/route-notice tests passed. Replay and reduced-motion verified. No actual route/customer/message changes.
+- Live routing remains owner-reviewed dispatch; full AI drive-time optimization is in development. Sample ordering is a fictional-coordinate proximity heuristic. Do not sell the new illustration as activated live optimization or measured savings.
+- Office Render dep-db7mmgeq1p3s73d1k93g live at 11:45:29 UTC. Public Office CSS/JS/route CSS and marketing homepage/style/route JS match release bytes. See docs/NAVIGATION-ROUTING-2026-10-14.md for scope and limitations.
