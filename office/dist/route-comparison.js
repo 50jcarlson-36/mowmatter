@@ -1,0 +1,1 @@
+document.addEventListener('click',e=>{const b=e.target.closest('.route-replay');if(!b||matchMedia('(prefers-reduced-motion: reduce)').matches)return;const c=b.closest('.route-comparison');c.classList.remove('is-playing');requestAnimationFrame(()=>requestAnimationFrame(()=>c.classList.add('is-playing')))});

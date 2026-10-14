@@ -9,6 +9,8 @@ const copies = [
     "lawn-care.html",
     "customer-progress.css",
     "style.css",
+    "route-comparison.css",
+    "route-comparison.js",
   ].map((name) => ["web/dist/" + name, name]),
   ...[
     "privacy-controls.js",
@@ -21,6 +23,7 @@ const copies = [
     "contact.html",
     "legal.css",
   ].map((name) => ["web/dist/" + name, name]),
+  ["web/dist/route-comparison.css", "office/dist/route-comparison.css"],
   ["api/pricing/quote-engine.mjs", "office/dist/pricing-engine.mjs"],
   ["office/dist/mm-client.js", "web/dist/yard-auth.js"],
   ["office/dist/services-preview.css", "web/dist/yard-insights.css"],

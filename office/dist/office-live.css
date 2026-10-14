@@ -34,3 +34,6 @@ dialog { overscroll-behavior:contain; }
   .actions>.button { min-width:0; white-space:normal; }
   .page-head h1 { font-size:28px; }
 }
+
+/* Let navigation take its real height so Sign out cannot overlap the summary. */
+#office-nav nav{height:auto;flex:none;min-height:0}#office-nav nav>*{flex-shrink:0}#business-glance{flex:none;margin-top:28px;padding-top:20px;border-top:1px solid #365345}#office-nav{min-width:0}#office-nav a,#office-nav button,#business-glance{overflow-wrap:anywhere}.section-head{flex-wrap:wrap}.section-head>*{min-width:0}.card,.card p,.help{overflow-wrap:anywhere}@media(min-width:769px){#office-nav{align-self:stretch}}
