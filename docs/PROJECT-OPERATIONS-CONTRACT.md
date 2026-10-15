@@ -380,3 +380,8 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - Activation requires server-side GOOGLE_ROUTES_API_KEY and MOW_ROUTING_ENABLED=true after migration and real provider validation; default off. Key presence/Google billing entitlement remains unverified. Google sign-in credentials are unrelated.
 - Crew published order is independent of disabled SMS; owner-reviewed schedule changes still follow existing consent/transport gates. No customer visits or communications were modified during testing.
 - See docs/OPERATIONAL-ROUTING-2026-10-14.md for test evidence, limits and activation checklist. Do not call routing launch-ready before live owner-to-crew rehearsal.
+
+## Office quick actions — 2026-10-15
+
+- Owner requested Quote, New customer and One-time visit at the top level for quick access. All five main owner views now share those actions in the page heading. Removed the nested dispatch/legacy-list visit button; the same existing creation handlers remain in use. Mobile uses two compact rows, with One-time visit full-width below Quote/New customer.
+- Verified Office suite/build and all three action handlers across Overview, Customers, Visits, Accounting and Team using the existing synthetic DOM fixture. Desktop and 390px browser preview checked. No customer record was created and no SMS configuration changed. Deployment verification follows the reviewable release.
