@@ -89,7 +89,7 @@
                 },
               ),
             }));
-      root.innerHTML = `<section class="card"><div class="section-head"><h2>Your dispatch board</h2><button class="button primary" id="dispatch-new-job">+ One-time visit</button><a class="button" href="operations.html">Weather &amp; care suggestions</a></div><div class="actions"><label>Business time zone <select id="dispatch-zone">${[...new Set([timeZone, "America/New_York", "America/Chicago", "America/Denver", "America/Phoenix", "America/Los_Angeles", "Pacific/Honolulu", "America/Anchorage"])].map((zone) => `<option value="${esc(zone)}" ${zone === timeZone ? "selected" : ""}>${esc(zone.replaceAll("_", " "))}</option>`).join("")}</select></label><label>Starting date <input id="dispatch-day" type="date" value="${esc(day)}"></label><button class="button" data-mode="day" aria-pressed="${mode === "day"}">Crews today</button><button class="button" data-mode="week" aria-pressed="${mode === "week"}">Next 7 days</button></div><p class="help">${capabilities.available ? "Route planner: Google Maps road estimates · up to 12 stops per crew." : "Road route planning is awaiting provider activation. Manual dispatch is available."}</p><p class="help">Drag pending cards between columns, or use Move. Reorder with the arrows, then publish the remaining route. Customer date/time changes queue an opted-in SMS. Moves affect this visit only.</p><p role="status" id="dispatch-status">${esc(error)}</p><div class="dispatch-columns">${columns
+      root.innerHTML = `<section class="card"><div class="section-head"><h2>Your dispatch board</h2><a class="button" href="operations.html">Weather &amp; care suggestions</a></div><div class="actions"><label>Business time zone <select id="dispatch-zone">${[...new Set([timeZone, "America/New_York", "America/Chicago", "America/Denver", "America/Phoenix", "America/Los_Angeles", "Pacific/Honolulu", "America/Anchorage"])].map((zone) => `<option value="${esc(zone)}" ${zone === timeZone ? "selected" : ""}>${esc(zone.replaceAll("_", " "))}</option>`).join("")}</select></label><label>Starting date <input id="dispatch-day" type="date" value="${esc(day)}"></label><button class="button" data-mode="day" aria-pressed="${mode === "day"}">Crews today</button><button class="button" data-mode="week" aria-pressed="${mode === "week"}">Next 7 days</button></div><p class="help">${capabilities.available ? "Route planner: Google Maps road estimates · up to 12 stops per crew." : "Road route planning is awaiting provider activation. Manual dispatch is available."}</p><p class="help">Drag pending cards between columns, or use Move. Reorder with the arrows, then publish the remaining route. Customer date/time changes queue an opted-in SMS. Moves affect this visit only.</p><p role="status" id="dispatch-status">${esc(error)}</p><div class="dispatch-columns">${columns
         .map((c) => {
           const jobs = c.id
             ? list(c.id, c.date)
@@ -123,7 +123,6 @@
         .join(
           "",
         )}</div><p class="help">Arrival notices use published stops and confirmed crew progress. They do not promise a GPS ETA. Uncertain SMS sends stay flagged for review.</p></section>`;
-      root.querySelector("#dispatch-new-job").onclick = () => edit();
       root.querySelector("#dispatch-zone").onchange = (e) => {
         timeZone = e.target.value;
       };
