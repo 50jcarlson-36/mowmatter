@@ -385,3 +385,10 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 
 - Owner requested Quote, New customer and One-time visit at the top level for quick access. All five main owner views now share those actions in the page heading. Removed the nested dispatch/legacy-list visit button; the same existing creation handlers remain in use. Mobile uses two compact rows, with One-time visit full-width below Quote/New customer.
 - Verified Office suite/build and all three action handlers across Overview, Customers, Visits, Accounting and Team using the existing synthetic DOM fixture. Desktop and 390px browser preview checked. No customer record was created and no SMS configuration changed. Deployment verification follows the reviewable release.
+
+## Bird campaign rejection correction — October 16, 2026
+
+- CYDJCUX rejected at 16:05:52 UTC (861, CALL_TO_ACTION / MANDATORY_MESSAGE_TERMINOLOGY). Brand remains approved; +1 201-908-8951 campaign linkage remains pending. No SMS sent; activation gates remain off.
+- Corrected actual optional consent disclosures, added public `/sms` opt-in guide and SMS-specific privacy/terms, and implemented atomic, idempotent opt-in confirmation with no disabled-provider backlog. Bird HELP/STOP/START replies updated and read back. Details: docs/SMS-CAMPAIGN-CORRECTION-2026-10-16.md.
+- 175 API checks and Office tests/build passed. Migration 20261016192355 applied through authenticated SQL editor, with migration history in the same transaction; connector itself denies queries. Production permission verification and release follow separately.
+- Corrected retry must reuse CYDJCUX and include deployed-form evidence. New review charge requires amount/owner approval; no new submission or fee authorized/executed by this correction yet.

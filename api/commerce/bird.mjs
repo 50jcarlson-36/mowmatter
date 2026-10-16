@@ -146,6 +146,7 @@ export function createBirdSMS({ backend: b, env = process.env, client } = {}) {
             "mow_quote_messages",
             "mow_visit_sms_messages",
             "mow_route_notices",
+            "mow_sms_confirmations",
           ])
             await b.db(
               table +

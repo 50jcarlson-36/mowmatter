@@ -168,26 +168,19 @@ export function createCommerce(options = {}) {
           typeof input.service_consent !== "boolean"
         )
           throw fail("Enter a US mobile number with +1");
-        send(200, {
-          ok: await b.db(
-            routeEnabled
-              ? "rpc/mow_route_preferences"
-              : "rpc/mow_sms_all_preferences",
-            "POST",
-            {
-              actor: user.id,
-              actor_email: user.email,
-              cid,
-              customer: cu,
-              p_phone: input.phone,
-              consent: input.consent,
-              service_consent: input.service_consent,
-              ...(routeEnabled
-                ? { route_consent: input.route_consent === true }
-                : {}),
-            },
-          ),
-        });
+        send(
+          200,
+          await sms.savePreferences({
+            actor: user.id,
+            actor_email: user.email,
+            cid,
+            customer: cu,
+            p_phone: input.phone,
+            consent: input.consent,
+            service_consent: input.service_consent,
+            route_consent: routeEnabled && input.route_consent === true,
+          }),
+        );
         return true;
       }
       if (["owner", "customer"].includes(action)) {

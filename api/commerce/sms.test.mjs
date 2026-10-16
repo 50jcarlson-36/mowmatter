@@ -91,14 +91,15 @@ test("Bird suppressions mirror durable STOP and callbacks protect terminal and s
     from: env.BIRD_SMS_FROM,
     to: inbound.from,
   });
-  assert.equal(writes.length, 4);
-  for (const write of writes.slice(1, 4)) {
+  assert.equal(writes.length, 5);
+  assert.ok(writes.some((w) => w[0].startsWith("mow_sms_confirmations?")));
+  for (const write of writes.slice(1, 5)) {
     assert.match(write[0], /provider_id=eq.bird:sms_unit/);
     assert.match(write[0], /not.in.\(delivered,undelivered,failed\)/);
     assert.equal(write[2].status, "delivered");
   }
   await invoke(sms, "sms.accepted", { ...inbound, from: env.BIRD_SMS_FROM });
-  assert.match(writes[4][0], /status=eq.sending/);
+  assert.match(writes[5][0], /status=eq.sending/);
 });
 test("Bird is the only provider and activation requires all gates", () => {
   assert.equal(createSMS({ env: {} }).status().provider, "bird");
