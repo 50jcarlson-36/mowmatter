@@ -14,4 +14,11 @@ Validation: all 175 API checks passed; Office tests/build passed. PGlite execute
 
 Production migration `20261016192355_sms_opt_in_confirmation.sql` applied atomically through the authenticated Supabase SQL editor after connector access was denied. Migration history was recorded in the same transaction. Production permission read-back and deployment evidence are recorded in the project operations contract when verified.
 
-Resubmit the same campaign with the deployed opt-in screenshot and corrected copy. A retry incurs another review fee; inspect its amount and obtain owner approval before the charged submission. Do not create a second campaign. SMS, registration-approved and webhooks-verified gates remain off until carrier approval plus an explicitly opted-in delivery/callback/STOP/HELP rehearsal passes. Route notices stay off separately.
+The same campaign was resubmitted with the deployed opt-in screenshot and corrected copy after owner approval of the $15 review fee. Do not create a second campaign. SMS, registration-approved and webhooks-verified gates remain off until carrier approval plus an explicitly opted-in delivery/callback/STOP/HELP rehearsal passes. Route notices stay off separately.
+
+
+## Verified release
+
+Release `7170410279ff425bc17e53015c3be05a3356d024` (PR #13) is live on Render API and Office. Public `/sms`, `/privacy`, `/terms`, Office `commerce.js?v=sms-consent-20261016` and customer-account HTML match release bytes. GitHub quality passed on branch and merged release. Production confirmation table is empty; RLS and service-only execution grants verified. Health reports all SMS activation gates off. The live, authenticated form screenshot has been attached to the prepared CYDJCUX retry; it contains no customer identifiers, saved number or consent.
+
+Owner approved the $15 resubmission, and Bird confirmation opc_01m533hwxfffbvfwynydc9aq6e completed at 19:38:59 UTC. Attempt 2 cms_01m533k3r3ebsbz7fcmv2hcfpv is submitted; campaign CYDJCUX is pending carrier review with proof attachment tca_01m533abb4fp8v88ena4hvyyw1 attached permanently. The existing number remains linked. No further monthly campaign was created. Submission is not carrier approval, and SMS remains off.
