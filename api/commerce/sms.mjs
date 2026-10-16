@@ -1,6 +1,7 @@
 import { fail, uuid } from "../operations/access.mjs";
 import { createBirdSMS } from "./bird.mjs";
 import { createRouteNotices } from "./route-notices.mjs";
+import { createSMSPreferences } from "./sms-preferences.mjs";
 import { createVisitSMS } from "./visit-sms.mjs";
 export function createSMS(options = {}) {
   const b = options.backend;
@@ -67,6 +68,11 @@ export function createSMS(options = {}) {
   }
   return {
     sendQuote,
+    savePreferences: createSMSPreferences({
+      backend: b,
+      transport: bird,
+      routeEnabled: env.MOW_ROUTE_NOTICES_ENABLED === "true",
+    }),
     sendRouteNotice: createRouteNotices({
       backend: b,
       transport:

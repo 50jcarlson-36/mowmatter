@@ -95,7 +95,7 @@ test("approval requires explicit checkbox and forwards server identity, never br
   assert.equal(h.writes[0].body.actor, actor);
   assert.equal(h.writes[0].body.actor_email, "customer@example.invalid");
 });
-test("SMS preferences require explicit boolean and US number; preference save sends no message", async () => {
+test("SMS preferences require explicit boolean and US number; disabled preference save cannot request a message", async () => {
   const h = harness();
   assert.equal(
     (await h.call("sms-preferences", { phone: "123", consent: true })).status,
@@ -122,7 +122,9 @@ test("SMS preferences require explicit boolean and US number; preference save se
     200,
   );
   assert.equal(h.writes[0].body.consent, false);
-  assert.equal(h.writes[0].path, "rpc/mow_sms_all_preferences");
+  assert.equal(h.writes[0].path, "rpc/mow_sms_preferences_confirm");
+  assert.equal(h.writes[0].body.send_confirmation, false);
+  assert.equal(h.writes[0].body.route_enabled, false);
 });
 test("disabled SMS prevents provider send and quote claim", async () => {
   const h = harness({ owner: true });

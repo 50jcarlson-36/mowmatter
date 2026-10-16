@@ -18,6 +18,7 @@ const copies = [
     "homeowner.js",
     "legal.js",
     "privacy.html",
+    "sms.html",
     "cookies.html",
     "terms.html",
     "contact.html",
