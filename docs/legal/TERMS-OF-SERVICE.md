@@ -35,7 +35,7 @@ Users represent they have authority for their uploads. No sensitive documents or
 ### Owner software plans
 | Plan | Monthly subscription | Customer cap | Platform fee on eligible service payments |
 |---|---:|---:|---:|
-| Starter | $0 | Up to 10 | 3.5% |
+| Starter | $0 | Up to 49 | 3.5% |
 | Growth | $49 | Up to 50 | 2.5% |
 | Scale | $129 | Unlimited | 1.5% |
 
