@@ -77,7 +77,7 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - No need to repeat project URLs or ask for already-recorded account IDs.
 
 ## Commercial decisions
-- Starter subscription $0, up to 10 customers; platform fee 3.5%.
+- Starter subscription $0, up to 49 customers; platform fee 3.5%.
 - Growth $49/month, up to 50 customers; platform fee 2.5%.
 - Scale $129/month, unlimited customers; platform fee 1.5%.
 - Stripe processing is additional. Homeowners pay the lawn company; the operator handles service refunds/disputes.
@@ -397,3 +397,7 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - Production read-back: confirmation table count 0, RLS true, anon SELECT false, authenticated INSERT false, authenticated function EXECUTE false, backend EXECUTE true; migration version recorded. No customer consent rows were edited in this correction. Health still reports SMS false, route notices false, and all three activation gates missing; routing also remains disabled/provider unconfigured.
 - Authenticated operator-owned TEST ONLY account shows the deployed program name, separate unchecked boxes, frequency/rates/STOP/HELP, support and SMS policy links. Screenshot cropped to the actual form only (blank phone; placeholder is not a saved number). Uploaded as supporting evidence to the staged retry of the same CYDJCUX. Updated samples match actual arrival/completion/offer templates, using business/customer placeholders instead of exposing a real personal link.
 - Owner approved the additional $15 fee. Bird confirmation opc_01m533hwxfffbvfwynydc9aq6e completed at 19:38:59 UTC; $15 paid from existing wallet balance. CYDJCUX attempt 2 is submitted/pending (cms_01m533k3r3ebsbz7fcmv2hcfpv), no new rejection reasons, existing number linked, proof attachment tca_01m533abb4fp8v88ena4hvyyw1 retained. API read-back confirms the corrected fields and carrier-review wait state. No second campaign, SMS sent, or carrier delivery tests. Activation still requires carrier approval plus delivery/callback/STOP/HELP tests.
+
+## Starter allowance — October 17, 2026
+
+Owner requested 49 customers on the free plan. Prepared matching marketing, Office, disclosures and an additive plan-function migration. Growth remains 50 and Scale unlimited; fees and credits unchanged. Production database inspection through the Supabase connector returned permission denied. Do not publish this offer before applying and verifying the migration. Release remains staged pending authorized database access.

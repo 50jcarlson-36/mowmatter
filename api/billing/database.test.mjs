@@ -23,6 +23,7 @@ async function fixture() {
     "supabase/baseline/unrecorded-yard-weather-20261010144631.sql",
     "supabase/migrations/20261013155735_payment_recovery_p1.sql",
     "supabase/migrations/20261013155746_entitlements_and_crew_scope.sql",
+    "supabase/migrations/20261017182834_starter_49_customers.sql",
   ])
     await db.exec(await readFile(new URL(file, root), "utf8"));
   await db.query("insert into auth.users(id) values($1)", [actor]);
@@ -170,7 +171,7 @@ test("request payload is immutable; expired sessions preserve history and permit
 test("customer caps permit editing at cap and do not trust unpaid tier labels", async () => {
   const db = await fixture();
   try {
-    for (let i = 0; i < 10; i++)
+    for (let i = 0; i < 49; i++)
       await db.query(
         "insert into mow_customers(company_id,name,address,city) values($1,'Test','123 Street','Denver CO')",
         [cid],
