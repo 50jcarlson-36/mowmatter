@@ -100,13 +100,19 @@
           route_consent: f.has("route_consent"),
         });
         target.querySelector("#sms-preferences [role=status]").textContent =
-          saved.confirmation === "pending_activation"
-            ? "Preference saved. SMS is not active; no text was sent. Save again after activation to request a confirmation."
-            : saved.confirmation === "needs_review"
-              ? "Preference saved. Confirmation delivery needs support review; no automatic retry will be sent."
-              : saved.confirmation === "accepted"
-                ? "Preference saved. Confirmation accepted for sending; delivery is not yet confirmed."
-                : "SMS preference saved.";
+          saved.confirmation === "provider_opt_out"
+            ? "This number opted out in Klaviyo. No texts will be sent. Contact support to verify re-enrollment."
+            : saved.confirmation === "provider_pending"
+              ? "Preference saved. Klaviyo is processing your subscription; complete any text confirmation you receive. You can save again once confirmed."
+              : saved.confirmation === "provider_sync_failed"
+                ? "Preference saved, but the text provider could not confirm it. Please retry or contact support."
+                : saved.confirmation === "pending_activation"
+                  ? "Preference saved. SMS is not active; no text was sent. Save again after activation to request a confirmation."
+                  : saved.confirmation === "needs_review"
+                    ? "Preference saved. Confirmation delivery needs support review; no automatic retry will be sent."
+                    : saved.confirmation === "accepted"
+                      ? "Preference saved. Confirmation accepted for sending; delivery is not yet confirmed."
+                      : "SMS preference saved.";
       });
       const photoSection = document.createElement("section");
       photoSection.className = "card";

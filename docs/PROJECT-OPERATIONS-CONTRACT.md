@@ -397,3 +397,22 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 - Production read-back: confirmation table count 0, RLS true, anon SELECT false, authenticated INSERT false, authenticated function EXECUTE false, backend EXECUTE true; migration version recorded. No customer consent rows were edited in this correction. Health still reports SMS false, route notices false, and all three activation gates missing; routing also remains disabled/provider unconfigured.
 - Authenticated operator-owned TEST ONLY account shows the deployed program name, separate unchecked boxes, frequency/rates/STOP/HELP, support and SMS policy links. Screenshot cropped to the actual form only (blank phone; placeholder is not a saved number). Uploaded as supporting evidence to the staged retry of the same CYDJCUX. Updated samples match actual arrival/completion/offer templates, using business/customer placeholders instead of exposing a real personal link.
 - Owner approved the additional $15 fee. Bird confirmation opc_01m533hwxfffbvfwynydc9aq6e completed at 19:38:59 UTC; $15 paid from existing wallet balance. CYDJCUX attempt 2 is submitted/pending (cms_01m533k3r3ebsbz7fcmv2hcfpv), no new rejection reasons, existing number linked, proof attachment tca_01m533abb4fp8v88ena4hvyyw1 retained. API read-back confirms the corrected fields and carrier-review wait state. No second campaign, SMS sent, or carrier delivery tests. Activation still requires carrier approval plus delivery/callback/STOP/HELP tests.
+
+
+## Klaviyo replacement preparation — October 27, 2026
+
+- Owner authorized replacing Bird with Klaviyo; end customers see their lawn-company name plus “powered by Mowmatter”.
+- Custom key Mowmatter production integration created and saved (Save only) as KLAVIYO_PRIVATE_API_KEY directly on the existing Render API service. No value is recorded here. Runtime use is unverified.
+- Klaviyo SMS settings still showed setup incomplete on October 27. Registration submission, carrier approval and delivery unverified.
+- Draft transport replaces Bird calls with consent-checked, tenant-scoped Klaviyo flow events. Gates default off; event acceptance is not carrier delivery. Bird callbacks retire with HTTP 410.
+- SMS terms prepared to describe billing and requested lead follow-ups with separate future opt-ins; no existing consent is broadened. Billing/landing queues, consent sync and provider flows remain outstanding; see docs/KLAVIYO-CONNECTION.md. No production release or activation implied.
+
+
+## Klaviyo setup and flow evidence — October 27, 2026
+
+- Owner completed setup. Sender +18338070561 is Under review for US/Canada. Carrier approval remains pending; no SMS sent.
+- Approved backend key verified by read-only Accounts/Metrics/Lists requests, all HTTP 200; account QTtf7q / Mowmatter. Secret retained only in Render after verification.
+- Native Stripe integration is Enabled; Data tab confirms historical invoices/payments synced October 27 at 9:01 AM as shown by Klaviyo. Live platform/Connect webhook coverage is not established by this observation.
+- Created four Draft flows: service SFePvq, upsell VDj3SF, homeowner billing VBLMJx, lead follow-up RRbZXT. Metric triggers use event.message. Seed records are backfill-only and have no email/phone, so cannot send messages.
+- Fresh authenticated consent sync added to draft source with separate transactional/marketing subscriptions, no historical import, provider STOP precedence and pending/error UI. Privacy names Klaviyo instead of Bird.
+- No source deployment, live-flow activation or real phone verification yet. Billing/lead event producers and owner billing automation remain outstanding. Keep activation flags false.

@@ -14,7 +14,7 @@ export function routeNoticeBody(claim) {
       : claim.kind === "cancelled"
         ? `Your lawn visit on ${p.date} was cancelled. ${p.reason || "Contact your provider to arrange your next visit."} Review service and billing details in your account.`
         : `Your lawn visit is now scheduled for ${p.date} at ${String(p.time).slice(0, 5)} (your property's local time). View the change or request another day in your account. This notice does not authorize an extra charge.`;
-  return `${claim.company_name} via MowMatter: ${text} ${url} Reply STOP to opt out, HELP for help.`;
+  return `${claim.company_name} — powered by Mowmatter: ${text} ${url} Reply STOP to opt out, HELP for help.`;
 }
 export function createRouteNotices({ backend, transport }) {
   return async () => {
@@ -24,6 +24,9 @@ export function createRouteNotices({ backend, transport }) {
     try {
       const result = await transport.send({
         to: claim.phone,
+        companyId: claim.company_id,
+        customerId: claim.customer_id,
+        kind: claim.kind,
         idempotencyKey: "route:" + claim.id,
         body: routeNoticeBody(claim),
       });
