@@ -1,13 +1,13 @@
 import { fail, uuid } from "../operations/access.mjs";
-import { createBirdSMS } from "./bird.mjs";
+import { createKlaviyoSMS } from "./klaviyo.mjs";
 import { createRouteNotices } from "./route-notices.mjs";
 import { createSMSPreferences } from "./sms-preferences.mjs";
 import { createVisitSMS } from "./visit-sms.mjs";
 export function createSMS(options = {}) {
   const b = options.backend;
   const env = options.env || process.env;
-  const bird = createBirdSMS(options);
-  const configured = bird.configured;
+  const klaviyo = createKlaviyoSMS(options);
+  const configured = klaviyo.configured;
   async function sendQuote({ cid, user, quoteId }) {
     if (!configured())
       throw fail(
@@ -40,13 +40,16 @@ export function createSMS(options = {}) {
     const url =
       "https://office.mowmatter.com/customer-account.html?" +
       new URLSearchParams({ business: cid, customer: claim.customer_id });
-    const message = `${company.name} via MowMatter: Optional additional service, $${(quote.amount_cents / 100).toFixed(2)}. Review scope and approve or decline: ${url} No charge from this text. Reply STOP to opt out, HELP for help.`;
+    const message = `${company.name} — powered by Mowmatter: Optional additional service, $${(quote.amount_cents / 100).toFixed(2)}. Review scope and approve or decline: ${url} No charge from this text. Reply STOP to opt out, HELP for help.`;
     // Do not retry uncertain sends: provider may have accepted the message before a timeout.
     try {
-      const r = await bird.send({
+      const r = await klaviyo.send({
         to: claim.phone,
         body: message,
         category: "marketing",
+        companyId: cid,
+        customerId: claim.customer_id,
+        kind: "quote",
         idempotencyKey: "quote:" + cid + ":" + quoteId,
       });
       await b.db(
@@ -70,25 +73,25 @@ export function createSMS(options = {}) {
     sendQuote,
     savePreferences: createSMSPreferences({
       backend: b,
-      transport: bird,
+      transport: klaviyo,
       routeEnabled: env.MOW_ROUTE_NOTICES_ENABLED === "true",
     }),
     sendRouteNotice: createRouteNotices({
       backend: b,
       transport:
         env.MOW_ROUTE_NOTICES_ENABLED === "true"
-          ? bird
+          ? klaviyo
           : { configured: () => false },
     }),
-    sendVisit: createVisitSMS({ backend: b, transport: bird }),
-    webhook: bird.webhook,
+    sendVisit: createVisitSMS({ backend: b, transport: klaviyo }),
+    webhook: klaviyo.webhook,
     configured,
     status: () => ({
-      provider: "bird",
+      provider: "klaviyo",
       ready: configured(),
       route_notices_enabled:
         env.MOW_ROUTE_NOTICES_ENABLED === "true" && configured(),
-      missing: bird.missing(),
+      missing: klaviyo.missing(),
     }),
   };
 }

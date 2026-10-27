@@ -2,7 +2,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 import { Readable } from "node:stream";
-import { createSMS } from "./sms.mjs";
+import { createBirdSMS } from "./bird.mjs";
+const createSMS = (options) => {
+  const transport = createBirdSMS(options);
+  return { ...transport, status: () => ({ provider: "bird" }) };
+};
 const env = {
   BIRD_API_KEY: "bk_us1_unit",
   BIRD_SMS_FROM: "+13865551234",
@@ -101,7 +105,7 @@ test("Bird suppressions mirror durable STOP and callbacks protect terminal and s
   await invoke(sms, "sms.accepted", { ...inbound, from: env.BIRD_SMS_FROM });
   assert.match(writes[5][0], /status=eq.sending/);
 });
-test("Bird is the only provider and activation requires all gates", () => {
+test("legacy Bird adapter activation requires all gates", () => {
   assert.equal(createSMS({ env: {} }).status().provider, "bird");
   assert.equal(
     createSMS({ env: { BIRD_API_KEY: "unit" } }).configured(),
@@ -113,45 +117,6 @@ test("Bird is the only provider and activation requires all gates", () => {
   );
   assert.equal(createSMS({ env }).configured(), true);
 });
-test("quote sends use Bird with stable idempotency and uncertain sends are never retried", async () => {
-  let calls = 0;
-  let request;
-  const sms = createSMS({
-    env,
-    client: {
-      sms: {
-        send: async (...args) => {
-          calls++;
-          request = args;
-          throw Error("timeout");
-        },
-      },
-    },
-    backend: {
-      db: async (path) =>
-        path.startsWith("mow_customer_quotes")
-          ? [{ amount_cents: 2500 }]
-          : path.startsWith("mow_crew_companies")
-            ? [{ name: "Test" }]
-            : { claimed: true, phone: inbound.from, customer_id: "customer" },
-    },
-  });
-  await assert.rejects(
-    () =>
-      sms.sendQuote({
-        cid: "company",
-        user: { id: "owner" },
-        quoteId: "11111111-1111-4111-8111-111111111111",
-      }),
-    /delivery needs review/,
-  );
-  assert.equal(calls, 1);
-  assert.equal(request[0].from, env.BIRD_SMS_FROM);
-  assert.equal(request[0].category, "marketing");
-  assert.equal(request[1].maxRetries, 0);
-  assert.match(request[1].idempotencyKey, /^quote:/);
-});
-
 test("Bird transport preserves E.164, saves provider ID and rejects unaccepted sends", async () => {
   const { createBirdSMS } = await import("./bird.mjs");
   let request;

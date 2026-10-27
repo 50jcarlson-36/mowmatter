@@ -14,6 +14,10 @@ export function createSMSPreferences({
     try {
       const result = await transport.send({
         to: claim.phone,
+        companyId: preferences.cid,
+        customerId: preferences.customer,
+        kind: "opt_in_confirmation",
+        category: preferences.consent ? "marketing" : "service",
         idempotencyKey: "opt-in:" + claim.id,
         body: "MowMatter: You requested texts for your selected preferences. Service updates: up to 2 per visit; optional offers: up to 3 per day, only if selected. Message and data rates may apply. Reply HELP for help or STOP to opt out. Support: support@mowmatter.com.",
       });

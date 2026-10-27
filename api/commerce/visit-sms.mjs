@@ -14,10 +14,13 @@ export function createVisitSMS({ backend: b, transport } = {}) {
         business: claim.company_id,
         customer: claim.customer_id,
       });
-    const body = `${claim.company_name} via MowMatter: ${claim.kind === "arrival" ? "We arrived for your lawn care visit." : "We finished your lawn care visit. View your visit details and photos:"} ${url} Reply STOP to opt out, HELP for help.`;
+    const body = `${claim.company_name} — powered by Mowmatter: ${claim.kind === "arrival" ? "We arrived for your lawn care visit." : "We finished your lawn care visit. View your visit details and photos:"} ${url} Reply STOP to opt out, HELP for help.`;
     try {
       const r = await transport.send({
         to: claim.phone,
+        companyId: claim.company_id,
+        customerId: claim.customer_id,
+        kind: claim.kind,
         idempotencyKey: "visit:" + claim.id,
         body,
       });
