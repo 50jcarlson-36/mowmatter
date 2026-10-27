@@ -141,3 +141,46 @@ test("welcome uses claimed phone and required copy; uncertain sends never retry"
   assert.equal((await save(prefs)).confirmation, "needs_review");
   assert.equal(sends, 1);
 });
+
+test("Klaviyo consent sync follows authorization, has no disabled backlog, and mirrors provider STOP", async () => {
+  const writes = [];
+  let synced = 0;
+  let status = "provider_pending";
+  const save = createSMSPreferences({
+    backend: {
+      db: async (...args) => {
+        writes.push(args);
+        return { claimed: false, status: "pending_activation" };
+      },
+    },
+    transport: {
+      configured: () => true,
+      syncPreferences: async (p) => {
+        synced++;
+        assert.equal(p.marketing, false);
+        assert.equal(p.service, true);
+        return { status };
+      },
+    },
+  });
+  assert.equal((await save(prefs)).confirmation, "provider_pending");
+  assert.equal(writes[0][2].send_confirmation, false);
+  assert.equal(synced, 1);
+  status = "provider_opt_out";
+  assert.equal((await save(prefs)).confirmation, "provider_opt_out");
+  assert.equal(writes.at(-1)[0], "rpc/mow_sms_stop");
+  const denied = createSMSPreferences({
+    backend: {
+      db: async () => {
+        throw Error("access denied");
+      },
+    },
+    transport: {
+      syncPreferences: async () => {
+        synced++;
+      },
+    },
+  });
+  await assert.rejects(denied(prefs), /access denied/);
+  assert.equal(synced, 2);
+});

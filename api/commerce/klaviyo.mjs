@@ -45,6 +45,86 @@ export function createKlaviyoSMS({ env = process.env, fetcher = fetch } = {}) {
       throw fail("SMS subscription needs review", 503);
     return result.data[0];
   }
+  async function syncPreferences({
+    phone,
+    marketing,
+    service,
+    companyId,
+    customerId,
+  }) {
+    if (!configured()) return { status: "pending_activation" };
+    if (
+      !/^\+1[2-9][0-9]{9}$/.test(phone || "") ||
+      !uuid(companyId) ||
+      !uuid(customerId)
+    )
+      throw fail("Invalid SMS preference");
+    const contact = await profile(phone);
+    const sms = contact?.attributes?.subscriptions?.sms;
+    // Provider STOP wins over a still-checked local preference. Re-enrollment is explicit support work.
+    if (
+      [sms?.marketing, sms?.transactional].some(
+        (channel) => channel?.consent === "UNSUBSCRIBED",
+      )
+    )
+      return { status: "provider_opt_out" };
+    if (
+      [sms?.marketing, sms?.transactional].some(
+        (channel) =>
+          channel?.consent === "SUBSCRIBED" &&
+          Object.entries(channel).some(
+            ([key, value]) =>
+              key.startsWith("can_receive_sms_") && value === false,
+          ),
+      )
+    )
+      return { status: "provider_blocked" };
+    const requested = {};
+    if (
+      marketing === true &&
+      !(
+        sms?.marketing?.consent === "SUBSCRIBED" &&
+        sms.marketing.can_receive_sms_marketing === true
+      )
+    )
+      requested.marketing = { consent: "SUBSCRIBED" };
+    if (
+      service === true &&
+      !(
+        sms?.transactional?.consent === "SUBSCRIBED" &&
+        sms.transactional.can_receive_sms_transactional === true
+      )
+    )
+      requested.transactional = { consent: "SUBSCRIBED" };
+    if (!Object.keys(requested).length) return { status: "ready" };
+    // This is called only AFTER an authenticated, explicit preference save succeeds.
+    // No historical_import, no background opt-in import, no subscription call from send().
+    await request("profile-subscription-bulk-create-jobs/", "POST", {
+      data: {
+        type: "profile-subscription-bulk-create-job",
+        attributes: {
+          custom_source:
+            "MowMatter customer account; company=" +
+            companyId +
+            "; customer=" +
+            customerId,
+          profiles: {
+            data: [
+              {
+                type: "profile",
+                attributes: {
+                  phone_number: phone,
+                  subscriptions: { sms: requested },
+                },
+              },
+            ],
+          },
+          historical_import: false,
+        },
+      },
+    });
+    return { status: "provider_pending" };
+  }
   async function send({
     to,
     body,
@@ -128,5 +208,5 @@ export function createKlaviyoSMS({ env = process.env, fetcher = fetch } = {}) {
     res.end(JSON.stringify({ error: "SMS provider retired" }));
     return true;
   }
-  return { configured, missing, send, webhook };
+  return { configured, missing, send, webhook, syncPreferences };
 }

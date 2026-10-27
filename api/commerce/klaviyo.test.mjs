@@ -201,3 +201,59 @@ test("quote integration uses server-owned company, customer, brand and marketing
   assert.match(payload.message, /Test Lawn — powered by Mowmatter/);
   assert.match(writes[0].body.provider_id, /^klaviyo:/);
 });
+
+test("fresh consent sync preserves category boundaries and never silently restores provider STOP", async () => {
+  const f = fixture({});
+  const sync = createKlaviyoSMS({ env, fetcher: f.fetcher }).syncPreferences;
+  assert.equal(
+    (
+      await sync({
+        phone: message.to,
+        companyId: cid,
+        customerId: customer,
+        marketing: false,
+        service: true,
+      })
+    ).status,
+    "provider_pending",
+  );
+  const request = JSON.parse(f.requests[1].options.body).data.attributes;
+  assert.deepEqual(request.profiles.data[0].attributes.subscriptions.sms, {
+    transactional: { consent: "SUBSCRIBED" },
+  });
+  assert.equal(request.historical_import, false);
+  const stopped = fixture({
+    marketing: { consent: "UNSUBSCRIBED", can_receive_sms_marketing: false },
+  });
+  assert.equal(
+    (
+      await createKlaviyoSMS({ env, fetcher: stopped.fetcher }).syncPreferences(
+        {
+          phone: message.to,
+          companyId: cid,
+          customerId: customer,
+          marketing: true,
+        },
+      )
+    ).status,
+    "provider_opt_out",
+  );
+  assert.equal(stopped.requests.length, 1);
+});
+
+test("provider delivery blocks are not cleared by a preference save", async () => {
+  const f = fixture({
+    marketing: { consent: "SUBSCRIBED", can_receive_sms_marketing: false },
+  });
+  const result = await createKlaviyoSMS({
+    env,
+    fetcher: f.fetcher,
+  }).syncPreferences({
+    phone: message.to,
+    companyId: cid,
+    customerId: customer,
+    marketing: true,
+  });
+  assert.equal(result.status, "provider_blocked");
+  assert.equal(f.requests.length, 1);
+});
