@@ -4,12 +4,15 @@ import {readFileSync} from 'node:fs';
 import {stripTypeScriptTypes} from 'node:module';
 import vm from 'node:vm';
 const root=new URL('../',import.meta.url);
-function edge(path,{fetcher,client,env={}}={}){
+function edge(path,{fetcher,client,notifier,env={}}={}){
  let handler;const source=stripTypeScriptTypes(readFileSync(new URL(path,root),'utf8').replace(/^import .*;\s*$/gm,''));
- const context={Request,Response,Headers,URLSearchParams,AbortSignal,crypto,TextEncoder,FormData,console:{error(){},warn(){}},createClient:()=>client,normalizeBrand:()=>({}),portalURL:()=>'',invoiceHTML:()=>'',deliverJobEmail:()=>{},fetch:fetcher,Deno:{env:{get:k=>env[k]},serve:h=>handler=h}};
+ const context={Request,Response,Headers,URLSearchParams,AbortSignal,crypto,TextEncoder,FormData,console:{error(){},warn(){}},createClient:()=>client,normalizeBrand:()=>({}),portalURL:()=>'',invoiceHTML:()=>'',deliverJobEmail:()=>{},notifySavedLead:notifier,fetch:fetcher,Deno:{env:{get:k=>env[k]},serve:h=>handler=h}};
  vm.runInNewContext(source,context);return handler;
 }
 const capture='supabase/functions/mowmatter-capture/index.ts';
+test('lead mail runs after persistence and sender failure does not lose a saved lead',async()=>{
+ for(const saved of [true,false]){let notifications=0,persisted=false;const h=edge(capture,{env:{SUPABASE_ANON_KEY:'test',SUPABASE_SERVICE_ROLE_KEY:'test',SUPABASE_URL:'https://db.invalid',RESEND_API_KEY:'test'},notifier:async()=>{assert.equal(persisted,true);notifications++;throw Error('test provider outage');},fetcher:async u=>{if(u.includes('rate_limit'))return new Response('true');if(u.includes('mowmatter_leads')){persisted=saved;return saved?new Response(''):Response.json({code:'database_unavailable'},{status:503});}return new Response('[]');}});const r=await h(new Request('https://edge.invalid',{method:'POST',headers:{Origin:'https://mowmatter.com',apikey:'test'},body:JSON.stringify({kind:'lead',email:'hello@mowmatter.com',early_access_consent:true,elapsed_ms:3000})}));assert.equal(r.status,saved?200:503);assert.equal(notifications,saved?1:0);}
+});
 const paths=[capture,'supabase/functions/mowmatter-growth/index.ts','crew/supabase/functions/mowmatter-crew/index.ts','crew/supabase/functions/mowmatter-business/index.ts'];
 test('all audited edge functions reject third-party preview origins',async()=>{
  for(const path of paths){const h=edge(path);for(const origin of ['https://mowmatter.steelfurymx.chatgpt.site','https://mowmatter-office.steelfurymx.chatgpt.site','https://mowmatter-crew.steelfurymx.chatgpt.site']){const r=await h(new Request('https://example.invalid',{method:'POST',headers:{Origin:origin}}));assert.equal(r.status,403);assert.notEqual(r.headers.get('access-control-allow-origin'),origin);}}

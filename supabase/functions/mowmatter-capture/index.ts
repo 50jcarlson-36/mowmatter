@@ -1,3 +1,4 @@
+import {notifySavedLead} from './lead-alert.mjs';
 const origins = new Set(['https://mowmatter.com','https://www.mowmatter.com','https://mowmatter.onrender.com']);
 const events = new Set(['cta_click','assessment_started','assessment_completed','signup_started','growth_lab_used']);
 Deno.serve(async (req: Request) => {
@@ -14,6 +15,7 @@ Deno.serve(async (req: Request) => {
  const secrets=JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS')||'{}');
  const secret=secrets.default||Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
  const db=(path:string,data:unknown)=>fetch(url+'/rest/v1/'+path,{method:'POST',headers:{apikey:secret,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify(data)});
+ const notify=async(email:string,kind:string,reference?:string)=>{const key=Deno.env.get('RESEND_API_KEY');if(!key)return;try{const result=await notifySavedLead({email,kind,reference},{key});if(result.status!=='accepted')console.error('lead_notification_failed',result.code||result.status);}catch{console.error('lead_notification_failed','unexpected');}};
  try {
   const raw=await req.text();if(raw.length>8192)return reply(413,{error:'Submission is too large.'});
   const b=JSON.parse(raw);if(!b||typeof b!=='object')return reply(400,{error:'Invalid submission.'});
@@ -51,6 +53,7 @@ Deno.serve(async (req: Request) => {
    if(b.contact_consent!==true||b.notice_version!=='2026-10-07')return reply(400,{error:'Review the request notice and contact permission.'});
    if(typeof b.submission_id!=='string'||!b.submission_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i))return reply(400,{error:'Reload and try again.'});
    const r=await db('rpc/mowmatter_submit_compliance',{p_id:b.submission_id,p_email:email,p_type:b.request_type,p_message:message,p_notice:b.notice_version});
+   if(r.ok)await notify(email,'compliance_request',b.submission_id);
    return r.ok?reply(200,{ok:true}):reply(503,{error:'Your request could not be saved. Please try again.'});
   }
   if(b.kind==='event'){
@@ -105,6 +108,7 @@ Deno.serve(async (req: Request) => {
    }
    const r=await db('mowmatter_homeowner_requests',{no_provider_found:noProvider,lead_sharing_consent:sharing,lead_location:leadLocation,email,first_name:clean(b.first_name,80),phone:clean(b.phone,32),address,city,state,zip,services,frequency:b.frequency,lawn_height:['short','overgrown','unsure'].includes(b.lawn_height)?b.lawn_height:'unsure',access_notes:clean(b.access_notes,1000),preferred_date:date||null,source,submission_id:b.submission_id,request_consent:true});
    if(!r.ok){const err=await r.json();if(err.code!=='23505')return reply(503,{error:'Your request could not be saved. Please try again.'});}
+   await notify(email,'homeowner',b.submission_id);
    return reply(200,{ok:true});
   }
   if(b.kind!=='lead')return reply(400,{error:'Unknown request.'});
@@ -120,6 +124,7 @@ Deno.serve(async (req: Request) => {
   const r=await db('mowmatter_leads?on_conflict=email',{email,first_name:clean(b.first_name,80),company:clean(b.company,120),phone:clean(b.phone,32),interest:['instant_quotes','featured_placement'].includes(b.interest)?b.interest:'platform',featured_zip:/^[0-9]{5}$/.test(clean(b.featured_zip,5))?clean(b.featured_zip,5):null,marketing_consent:b.marketing_consent===true&&!suppressed,source,snapshot:Object.keys(snapshot).length?snapshot:null});
   if(!r.ok){const err=await r.json();if(err.code!=='23505')return reply(503,{error:'We could not save your request. Please try again.'});}
   else if(measurement) await db('mowmatter_funnel_events',{event:'lead_saved',session_id:session,source});
+  await notify(email,'lead');
   return reply(200,{ok:true});
  } catch {return reply(400,{error:'Please check your details and try again.'});}
 });
