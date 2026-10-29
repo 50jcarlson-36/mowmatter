@@ -1,5 +1,11 @@
 # MowMatter project operations contract
 
+## Lead inbox update — October 28, 2026
+
+Owner selected hello@mowmatter.com in Zoho and retained existing sending providers. Zoho's existing Hello group has one active recipient, jcarlson@mowmatter.com; the labeled receiving-address test was reported delivered by Resend. No extra paid mailbox was created.
+
+The local capture change adds Resend internal alerts after persisted platform leads, homeowner requests, and support/privacy requests. It uses the existing RESEND_API_KEY secret, fixed branded sender/recipient, minimal reference/contact content, and bounded retries with stable provider idempotency. Saved requests remain authoritative when mail fails; this is not a durable alert outbox. Capture security and alert tests pass. Deployment and live lead-to-alert testing remain pending: the connected Supabase account cannot access pzymmsfjgspvzbivzvkx and browser sign-in is required. Do not report the local function change as live.
+
 Last updated: 2026-10-13, America/New_York.
 Purpose: durable technical handoff and source of truth for project identity, deployment, access, decisions and evidence. This is an engineering operating agreement, not a legal services contract.
 
