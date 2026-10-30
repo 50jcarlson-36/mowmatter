@@ -408,3 +408,7 @@ Workspace: MowMatter, team tea-db1qtlks728c73dpaplg.
 
 ## Optional Google Analytics — 2026-10-28
 Owner requested tracking under 50jcarlson@gmail.com. Mowmatter’s separate GA4 web stream uses G-1T8EP3GRVX. The marketing integration reuses mmPrivacy, renews consent at version 2026-10-28, and keeps optional Google requests off until Allow analytics. Google receives normalized route categories only; advertising features stay disabled. Root and web/dist copies remain synchronized. Render was inspected in the owner-confirmed MowMatter workspace; its marketing copy is historical. Cloudflare remains the documented marketing publisher. Installation, build success, and actual public-domain measurement are distinct verification steps.
+
+## Partner program page — October 30, 2026
+
+Owner requested a public partners page supporting lawn care startup and equipment upgrades. Added `/partners` with planned equipment discounts, trailer connections, insurance referrals and business services, plus owner early-access and brand contact links to the existing hello@mowmatter.com inbox. Outreach is in progress; no partners, exclusive offers or commissions are announced as confirmed. No unapproved brand logos or invented savings appear. Added Partners to marketing navigation, the sitemap, and root/canonical drift checks. Local link, mirror and security-header checks pass; mobile hero and navigation inspected. Publication must be independently verified on mowmatter.com through the existing Cloudflare Workers Builds publisher.

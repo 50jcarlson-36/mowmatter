@@ -5,6 +5,8 @@ const root = resolve(import.meta.dirname, "../..");
 const copies = [
   ...[
     "index.html",
+    "partners.html",
+    "partners.css",
     "crew-app.html",
     "lawn-care.html",
     "customer-progress.css",
