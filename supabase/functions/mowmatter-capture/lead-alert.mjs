@@ -1,3 +1,7 @@
+/**
+ * @param {{email: string, kind: string, reference?: string}} lead
+ * @param {{key?: string, fetcher?: typeof fetch, now?: () => Date, pause?: (ms: number) => Promise<void>}} [options]
+ */
 export async function notifySavedLead({email,kind,reference},{key,fetcher=fetch,now=()=>new Date(),pause=ms=>new Promise(r=>setTimeout(r,ms))}={}) {
  if(!key)return {status:'unconfigured'};
  const type=['lead','homeowner','compliance_request'].includes(kind)?kind:'lead';
