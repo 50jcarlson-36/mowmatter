@@ -306,14 +306,16 @@
           (button.onclick = async () => {
             button.disabled = true;
             try {
-              await request("send-quote-sms", {
+              const sent = await request("send-quote-sms", {
                 ...scope,
                 id: button.dataset.sms,
               });
               target.querySelector(
                 `[data-quote-status="${button.dataset.sms}"]`,
               ).textContent =
-                "SMS accepted by provider. Approval is still required in the customer account.";
+                sent?.status === "deferred"
+                  ? `Outside the customer's texting hours. SMS scheduled for ${new Date(sent.send_after).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })} (your time). Approval is still required in the customer account.`
+                  : "SMS accepted by provider. Approval is still required in the customer account.";
             } catch (e) {
               target.querySelector(
                 `[data-quote-status="${button.dataset.sms}"]`,

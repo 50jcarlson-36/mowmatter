@@ -118,6 +118,7 @@ test("quote sends use Bird with stable idempotency and uncertain sends are never
   let request;
   const sms = createSMS({
     env,
+    now: () => new Date("2026-06-15T16:00:00Z"), // noon Eastern, inside quiet-hours window
     client: {
       sms: {
         send: async (...args) => {
