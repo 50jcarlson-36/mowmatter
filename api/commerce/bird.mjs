@@ -2,6 +2,24 @@ import { BirdClient } from "@messagebird/sdk";
 import { fail } from "../operations/access.mjs";
 const phone = (v) => /^\+1[2-9][0-9]{9}$/.test(v || "");
 const reference = (v) => /^sms_[A-Za-z0-9]+$/.test(v || "");
+// FCC revocation rule: replies using these words must be honored even with punctuation or
+// extra words ("Stop.", "please stop texting me"). Over-honoring is the safe direction;
+// CANCEL/END/QUIT only count mid-message in short replies to avoid "end of the driveway".
+const ALWAYS = ["STOP", "STOPALL", "UNSUBSCRIBE", "REVOKE", "OPTOUT"];
+const SHORT_ONLY = ["CANCEL", "END", "QUIT"];
+export function isOptOut(text) {
+  const words = String(text || "")
+    .toUpperCase()
+    .replace(/\bOPT[\s-]*OUT\b/g, "OPTOUT")
+    .replace(/[^A-Z]+/g, " ")
+    .trim()
+    .split(" ")
+    .filter(Boolean);
+  if (!words.length) return false;
+  if ([...ALWAYS, ...SHORT_ONLY].includes(words[0])) return true;
+  if (words.some((w) => ALWAYS.includes(w))) return true;
+  return words.length <= 4 && words.some((w) => SHORT_ONLY.includes(w));
+}
 export function createBirdSMS({ backend: b, env = process.env, client } = {}) {
   const missing = () => {
     const list = [
@@ -104,21 +122,7 @@ export function createBirdSMS({ backend: b, env = process.env, client } = {}) {
           reply(400);
           return true;
         }
-        const keyword = String(data.text || "")
-          .trim()
-          .toUpperCase();
-        if (
-          [
-            "STOP",
-            "STOPALL",
-            "UNSUBSCRIBE",
-            "CANCEL",
-            "END",
-            "QUIT",
-            "REVOKE",
-            "OPT OUT",
-          ].includes(keyword)
-        )
+        if (isOptOut(data.text))
           await b.db("rpc/mow_sms_stop", "POST", { p_phone: data.from });
         // Bird keyword rules provide STOP/HELP responses. YES/START never approve work or restore consent.
       } else if (event.type === "sms_suppression.created") {
