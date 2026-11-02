@@ -2,18 +2,18 @@
 (() => {
   'use strict';
   const activities = [
-    ['valuation', 'Build a business worth growing', 'Know your numbers. Plan your next chapter.', '', 'Explore your business growth potential.', 'growth.html', 'Explore the Growth Lab'],
-    ['signup', 'Your next chapter starts here', 'Still running your business from text messages?', '', 'Take the first step toward a more organized operation.', 'early-access.html', 'Join early access'],
-    ['routing', 'Give your crew a clearer day', 'The next stop. The job details. One workspace.', '', 'See how Mow Matter connects the office and the field.', 'crew-app.html', 'Explore the Crew app'],
-    ['growth', 'Get organized before you grow', 'A second truck needs more than a longer to-do list.', '', 'Explore a system built around owners and small crews.', 'platform.html', 'Explore the platform'],
-    ['lead', 'Make your next customer a nearby one', 'Explore the power of tighter neighborhoods.', '', 'Plan growth around the routes you already serve.', 'growth.html', 'Plan your growth'],
-    ['routing', 'Leave the late-night text threads behind', 'Tomorrow’s jobs deserve a clear plan.', '', 'See the crew experience before your next busy day.', 'crew-app.html', 'See the Crew app'],
-    ['valuation', 'Build more than a packed schedule', 'What could your lawn care business become?', '', 'Explore recurring work, route density and business planning.', 'growth.html', 'Explore your potential'],
-    ['signup', 'Ready for a more organized business?', 'Customers, recurring work and crew progress.', '', 'Discover the management hub built for lawn care.', 'platform.html', 'See the management hub'],
-    ['routing', 'Put the plan in your crew’s hands', 'Less back-and-forth. A clearer next stop.', '', 'Explore the mobile experience for people doing the work.', 'crew-app.html', 'Meet Mow Matter Crew'],
-    ['growth', 'Make room for what’s next', 'Growth starts with a business you can manage.', '', 'See how your office and field can stay connected.', 'platform.html', 'Explore the platform'],
-    ['lead', 'Turn visibility into opportunity', 'Your truck can start the next conversation.', '', 'Explore website and QR-code lead generation.', 'platform.html', 'See what’s possible'],
-    ['signup', 'Stop putting your next chapter off', 'You have the truck. You have the drive.', '', 'Explore the tools to organize the business behind the work.', 'early-access.html', 'Join early access']
+    ['valuation', 'Build a business worth growing', 'Know your numbers. Plan your next chapter.', '', 'Explore your business growth potential.', '/growth', 'Explore the Growth Lab'],
+    ['signup', 'Your next chapter starts here', 'Still running your business from text messages?', '', 'Take the first step toward a more organized operation.', '/early-access', 'Join early access'],
+    ['routing', 'Give your crew a clearer day', 'The next stop. The job details. One workspace.', '', 'See how Mow Matter connects the office and the field.', '/crew-app', 'Explore the Crew app'],
+    ['growth', 'Get organized before you grow', 'A second truck needs more than a longer to-do list.', '', 'Explore a system built around owners and small crews.', '/platform', 'Explore the platform'],
+    ['lead', 'Make your next customer a nearby one', 'Explore the power of tighter neighborhoods.', '', 'Plan growth around the routes you already serve.', '/growth', 'Plan your growth'],
+    ['routing', 'Leave the late-night text threads behind', 'Tomorrow’s jobs deserve a clear plan.', '', 'See the crew experience before your next busy day.', '/crew-app', 'See the Crew app'],
+    ['valuation', 'Build more than a packed schedule', 'What could your lawn care business become?', '', 'Explore recurring work, route density and business planning.', '/growth', 'Explore your potential'],
+    ['signup', 'Ready for a more organized business?', 'Customers, recurring work and crew progress.', '', 'Discover the management hub built for lawn care.', '/platform', 'See the management hub'],
+    ['routing', 'Put the plan in your crew’s hands', 'Less back-and-forth. A clearer next stop.', '', 'Explore the mobile experience for people doing the work.', '/crew-app', 'Meet Mow Matter Crew'],
+    ['growth', 'Make room for what’s next', 'Growth starts with a business you can manage.', '', 'See how your office and field can stay connected.', '/platform', 'Explore the platform'],
+    ['lead', 'Turn visibility into opportunity', 'Your truck can start the next conversation.', '', 'Explore website and QR-code lead generation.', '/platform', 'See what’s possible'],
+    ['signup', 'Stop putting your next chapter off', 'You have the truck. You have the drive.', '', 'Explore the tools to organize the business behind the work.', '/early-access', 'Join early access']
   ];
   const key = 'mowmatter.marketing.v2';
   const pausedKey = 'mowmatter.activity.paused';
@@ -35,7 +35,7 @@
       if (!res.ok) throw Error('Unavailable');
       const data = await res.json();
       if (Math.abs(Date.now() - Date.parse(data.generatedAt)) > 600000 || !Number.isFinite(Date.parse(data.generatedAt))) throw Error('Stale');
-      live = (Array.isArray(data.events) ? data.events : []).filter(e => ['signup','lead'].includes(e.type) && typeof e.title === 'string' && typeof e.place === 'string' && typeof e.detail === 'string' && e.href === 'early-access.html').slice(0,30).map(e => [e.type,e.title.slice(0,100),e.place.slice(0,100),'',e.detail.slice(0,250),e.href,e.cta || 'Explore Mow Matter']);
+      live = (Array.isArray(data.events) ? data.events : []).filter(e => ['signup','lead'].includes(e.type) && typeof e.title === 'string' && typeof e.place === 'string' && typeof e.detail === 'string' && e.href === 'early-access.html').slice(0,30).map(e => [e.type,e.title.slice(0,100),e.place.slice(0,100),'',e.detail.slice(0,250),'/early-access',e.cta || 'Explore Mow Matter']);
     } catch { live = []; }
     finally { loading = false; }
   }

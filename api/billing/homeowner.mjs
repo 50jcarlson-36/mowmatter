@@ -124,8 +124,8 @@ export function homeownerBilling({
         {
           business_profile: {
             headline: "Manage your lawn care subscription",
-            privacy_policy_url: "https://mowmatter.com/privacy.html",
-            terms_of_service_url: "https://mowmatter.com/service-terms.html",
+            privacy_policy_url: "https://mowmatter.com/privacy",
+            terms_of_service_url: "https://mowmatter.com/service-terms",
           },
           features: {
             customer_update: { enabled: false },

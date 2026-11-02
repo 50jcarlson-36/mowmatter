@@ -118,6 +118,7 @@ test("quote sends use Bird with stable idempotency and uncertain sends are never
   let request;
   const sms = createSMS({
     env,
+    now: () => new Date("2026-06-15T16:00:00Z"), // noon Eastern, inside quiet-hours window
     client: {
       sms: {
         send: async (...args) => {
@@ -190,4 +191,56 @@ test("Bird transport preserves E.164, saves provider ID and rejects unaccepted s
     () => bird.send({ to: inbound.from, body: "Rejected" }),
     /did not accept/,
   );
+});
+
+test("opt-out replies are honored with punctuation, case and surrounding words", async () => {
+  const { isOptOut } = await import("./bird.mjs");
+  for (const yes of [
+    "STOP",
+    "stop",
+    "Stop.",
+    " STOP! ",
+    "Please stop texting me",
+    "stop all",
+    "STOPALL",
+    "Unsubscribe me",
+    "revoke",
+    "opt out",
+    "Opt-out",
+    "OPTOUT",
+    "Quit",
+    "End",
+    "cancel please",
+    "cancel texts",
+    "End.",
+    "no more, stop",
+  ])
+    assert.equal(isOptOut(yes), true, yes);
+  for (const no of [
+    "",
+    "YES",
+    "START",
+    "HELP",
+    "Thanks!",
+    "I'll be at the end of the driveway today",
+    "Can you quit early and cancel the edging on Friday",
+    "Sounds good",
+  ])
+    assert.equal(isOptOut(no), false, no);
+});
+test("a punctuated STOP reply suppresses the number", async () => {
+  const writes = [];
+  const sms = createSMS({
+    env,
+    backend: { db: async (...args) => writes.push(args) },
+  });
+  assert.equal(
+    await invoke(sms, "sms.received", { ...inbound, text: "Stop texting me." }),
+    200,
+  );
+  assert.deepEqual(writes[0], [
+    "rpc/mow_sms_stop",
+    "POST",
+    { p_phone: inbound.from },
+  ]);
 });
