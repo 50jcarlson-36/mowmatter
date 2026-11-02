@@ -899,7 +899,7 @@ export function createBilling({
                 customer: body.customer_id,
                 payment: "returned",
               })
-            : "https://mowmatter.com/payment.html?result=returned",
+            : "https://mowmatter.com/payment?result=returned",
           cancel_url: customerRoute
             ? "https://office.mowmatter.com/customer-account.html?" +
               new URLSearchParams({
@@ -907,7 +907,7 @@ export function createBilling({
                 customer: body.customer_id,
                 payment: "cancelled",
               })
-            : "https://mowmatter.com/payment.html?result=cancelled",
+            : "https://mowmatter.com/payment?result=cancelled",
         });
         send(200, result);
         return true;
