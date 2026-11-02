@@ -1,0 +1,3 @@
+# Cloudflare static assets redirects (served from web/dist).
+/support /contact 301
+/support/ /contact 301
