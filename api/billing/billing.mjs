@@ -759,9 +759,15 @@ export function createBilling({
         return true;
       }
       if (pathname === "/api/billing/status") {
+        const configuration = await ready();
+        const connection =
+          stripe && configuration.stripe_account_verified
+            ? await connected(a)
+            : null;
         send(200, {
+          connection,
           fee_percent: FEE_BPS[feePlan(a)] / 100,
-          ...(await ready()),
+          ...configuration,
           subscription: a
             ? {
                 plan: a.plan,
