@@ -61,7 +61,7 @@ test("stale consent expires and every marketing page loads controls before colle
   w.localStorage.setItem(
     "mm-privacy-v1",
     JSON.stringify({
-      version: "2026-10-28",
+      version: "2026-11-03",
       analytics: true,
       time: Date.now() - 181 * 86400000,
     }),
@@ -238,4 +238,111 @@ test("referral opt-out form requires neither account nor a contact permission ch
   assert.equal(f.elements.message.required, false);
   assert.equal(f.elements.contact_consent.required, false);
   assert.equal(f.querySelector("button").textContent, "Stop referral sharing");
+});
+function adsPage({ gpc = false, ids = true, url = "https://mowmatter.com/?gclid=TESTCLICK&utm_source=google&email=PRIVATE" } = {}) {
+  const d = new JSDOM("<!doctype html><head></head><body></body>", {
+      url,
+      runScripts: "dangerously",
+    }),
+    w = d.window;
+  Object.defineProperty(w.navigator, "globalPrivacyControl", { value: gpc });
+  w.eval(code);
+  const s = w.document.createElement("script");
+  Object.assign(s.dataset, {
+    adsId: ids ? "AW-1234567890" : "AW-REPLACE_WITH_CONVERSION_ID",
+    adsHost: "mowmatter.com",
+    adsBusinessSignup: ids ? "TestSignup1" : "REPLACE_BUSINESS_SIGNUP_LABEL",
+    adsHomeownerRequest: ids ? "TestHome01" : "REPLACE_HOMEOWNER_REQUEST_LABEL",
+    adsDirectorySearch: ids ? "TestSearch1" : "REPLACE_DIRECTORY_SEARCH_LABEL",
+  });
+  s.textContent = fs.readFileSync(__dirname + "/dist/ads-conversions.js", "utf8");
+  w.document.head.append(s);
+  const tags = () =>
+    w.document.querySelectorAll('script[src^="https://www.googletagmanager.com/gtag/js"]').length;
+  const conversions = () =>
+    (w.dataLayer || []).filter((x) => x[0] === "event" && x[1] === "conversion");
+  return { w, tags, conversions };
+}
+test("Google Ads conversions wait for Allow analytics and stop on withdrawal", () => {
+  const { w, tags, conversions } = adsPage();
+  assert.equal(w.mmAds.convert("business_signup"), false);
+  assert.equal(tags(), 0);
+  assert.equal(w.dataLayer, undefined);
+  w.mmPrivacy.save(true);
+  assert.equal(tags(), 1);
+  assert.equal(w.mmAds.convert("homeowner_request", { transaction_id: "PRIVATE" }), true);
+  assert.equal(conversions().length, 1);
+  assert.equal(conversions()[0][2].send_to, "AW-1234567890/TestHome01");
+  assert.equal(conversions()[0][2].transaction_id, undefined);
+  assert(!JSON.stringify(w.dataLayer).includes("PRIVATE"));
+  w.mmPrivacy.save(false);
+  assert.equal(w.mmAds.convert("directory_search"), false);
+  assert.equal(conversions().length, 1);
+});
+test("Google Ads stays off with GPC, placeholder IDs or another host", () => {
+  for (const options of [
+    { gpc: true },
+    { ids: false },
+    { url: "https://preview.example.invalid/?gclid=TESTCLICK" },
+  ]) {
+    const { w, tags, conversions } = adsPage(options);
+    w.mmPrivacy.save(true);
+    assert.equal(w.mmAds.convert("business_signup"), false);
+    assert.equal(tags(), 0);
+    assert.equal(conversions().length, 0);
+  }
+});
+test("ad-click and campaign attribution is kept only with consent", () => {
+  const { w } = adsPage();
+  assert.equal(Object.keys(w.mmPrivacy.source()).length, 0);
+  assert.equal(w.sessionStorage.getItem("mm-attribution-v1"), null);
+  w.mmPrivacy.save(true);
+  const source = w.mmPrivacy.source();
+  assert.equal(source.gclid, "TESTCLICK");
+  assert.equal(source.utm_source, "google");
+  assert.equal(source.email, undefined);
+  assert.equal(JSON.parse(w.sessionStorage.getItem("mm-attribution-v1")).gclid, "TESTCLICK");
+  w.mmPrivacy.save(false);
+  assert.equal(Object.keys(w.mmPrivacy.source()).length, 0);
+  assert.equal(w.sessionStorage.getItem("mm-attribution-v1"), null);
+});
+test("welcome page records a business signup only with consent and only forwards to Office", () => {
+  for (const [consent, next, expected] of [
+    [true, "/index.html", "https://office.mowmatter.com/index.html"],
+    [false, "/settings.html", "https://office.mowmatter.com/settings.html"],
+    [true, "//evil.example/x.html", "https://office.mowmatter.com/index.html"],
+    [true, "https://evil.example", "https://office.mowmatter.com/index.html"],
+  ]) {
+    const d = new JSDOM(
+      fs.readFileSync(__dirname + "/dist/welcome.html", "utf8").replace(/<script[^>]*><\/script>/g, ""),
+      { url: "https://mowmatter.com/welcome?next=" + encodeURIComponent(next), runScripts: "outside-only" },
+    );
+    const w = d.window,
+      calls = [],
+      went = [];
+    w.__went = (t) => went.push(t);
+    w.mmPrivacy = { allowed: () => consent };
+    w.mmAds = { convert: (name, opts) => (calls.push(name), opts.event_callback(), true) };
+    w.eval(
+      fs.readFileSync(__dirname + "/dist/welcome.js", "utf8").replace("location.replace(target)", "window.__went(target)"),
+    );
+    assert.deepEqual([...calls], consent ? ["business_signup"] : []);
+    assert.equal(went.length, 1);
+    assert.equal(went[0], expected);
+    assert.equal(w.document.getElementById("welcome-link").href, expected);
+  }
+});
+test("paid campaign landings hide the cross-audience bar for the tab; organic visits keep it", () => {
+  const html =
+    '<!doctype html><body><aside id="audience-banner"></aside><button id="dismiss-banner"></button><nav></nav></body>';
+  for (const [query, hidden] of [
+    ["?utm_campaign=mm-biz-123", true],
+    ["?utm_campaign=mm-home-9", true],
+    ["?utm_campaign=newsletter", false],
+    ["", false],
+  ]) {
+    const w = new JSDOM(html, { url: "https://mowmatter.com/pricing" + query, runScripts: "outside-only" }).window;
+    w.eval(fs.readFileSync(__dirname + "/dist/shell.js", "utf8"));
+    assert.equal(w.document.getElementById("audience-banner").hidden, hidden, query);
+  }
 });

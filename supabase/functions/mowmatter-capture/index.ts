@@ -36,7 +36,7 @@ Deno.serve(async (req: Request) => {
   if(!(await rate.json()))return reply(429,{error:'Too many requests. Please try again later.'});
   const clean=(x:unknown,max:number)=>typeof x==='string'?x.trim().slice(0,max):'';
   const measurement=b.measurement_consent===true&&b.privacy_signal!==true&&b.measurement_opt_out!==true&&req.headers.get('sec-gpc')!=='1';
-  const source:Record<string,string>={};if(measurement)for(const k of ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','referrer']){const v=clean(b.source?.[k],160);if(v)source[k]=v;}
+  const source:Record<string,string>={};if(measurement)for(const k of ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','gclid','gbraid','wbraid','referrer']){const v=clean(b.source?.[k],160);if(v)source[k]=v;}
   const session=typeof b.session_id==='string'&&/^[0-9a-f-]{36}$/i.test(b.session_id)?b.session_id:crypto.randomUUID();
   const privacySignal=b.privacy_signal===true||req.headers.get('sec-gpc')==='1';
   if(b.kind==='sale_optout'){

@@ -16,6 +16,7 @@ const copies = [
   ].map((name) => ["web/dist/" + name, name]),
   ...[
     "privacy-controls.js",
+    "ads-conversions.js",
     "capture.js",
     "homeowner.js",
     "legal.js",
