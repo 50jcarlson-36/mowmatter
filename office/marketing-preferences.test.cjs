@@ -1,0 +1,22 @@
+const {JSDOM,VirtualConsole}=require('jsdom');const fs=require('fs');const assert=require('node:assert/strict');
+const source=fs.readFileSync(__dirname+'/dist/marketing-preferences.js','utf8');
+(async()=>{
+ const calls=[];let current={ok:true,email:false,sms:false,phone:null};
+ const dom=new JSDOM('<body data-page="settings"><main id="main"></main></body>',{url:'https://office.mowmatter.com/settings.html',runScripts:'outside-only',virtualConsole:new VirtualConsole()});const w=dom.window;w.AbortSignal=AbortSignal;
+ w.MM={ensureSession:async()=>({access_token:'token'})};
+ w.fetch=async(url,options)=>{const body=JSON.parse(options.body);calls.push({url,body,auth:options.headers.Authorization});if(body.p_sms!==undefined)current={ok:true,email:body.p_email,sms:body.p_sms,phone:body.p_phone};return {ok:true,json:async()=>current}};
+ w.showMowBranding=async()=>{w.document.getElementById('main').innerHTML='<section>branding</section>'};
+ w.eval(source);await w.showMowBranding({company:{id:'c'}});await new Promise(r=>setTimeout(r,0));
+ const form=w.document.querySelector('#mow-news form');assert.ok(form,'news card renders after branding');
+ assert.equal(w.document.querySelector('#main section').textContent,'branding');
+ assert.equal(form.elements.email.checked,false);assert.equal(form.elements.sms.checked,false);
+ assert.match(form.parentNode.textContent,/never contacts your customers/);assert.match(form.textContent,/not a condition of purchase/);assert.match(form.textContent,/STOP/);
+ assert.equal(calls[0].url,'https://pzymmsfjgspvzbivzvkx.supabase.co/rest/v1/rpc/mm_marketing_preferences');assert.deepEqual(calls[0].body,{});assert.equal(calls[0].auth,'Bearer token');
+ form.elements.sms.checked=true;form.elements.phone.value='386';form.dispatchEvent(new w.Event('submit',{cancelable:true}));await new Promise(r=>setTimeout(r,0));
+ assert.equal(calls.length,1,'texts need a valid number before saving');assert.match(form.querySelector('[role=status]').textContent,/US mobile number/);
+ form.elements.email.checked=true;form.elements.phone.value='1 (386) 555-0123';form.dispatchEvent(new w.Event('submit',{cancelable:true}));await new Promise(r=>setTimeout(r,0));
+ assert.deepEqual(calls[1].body,{p_email:true,p_sms:true,p_phone:'+13865550123'});assert.match(form.querySelector('[role=status]').textContent,/\(386\) 555-0123/);
+ const other=new JSDOM('<body data-page="billing"><main id="main"></main></body>',{runScripts:'outside-only',virtualConsole:new VirtualConsole()});other.window.showMowBranding=async()=>{};other.window.eval(source);await other.window.showMowBranding({});assert.equal(other.window.document.getElementById('mow-news'),null);
+ dom.window.close();other.window.close();
+ console.log('PASS: news card renders on settings only, defaults unchecked, requires a valid number for texts and saves explicit choices.');
+})().catch(error=>{console.error(error);process.exit(1)});
