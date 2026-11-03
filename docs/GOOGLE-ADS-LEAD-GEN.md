@@ -10,14 +10,14 @@ Two Search campaigns for mowmatter.com: lawn care **business owners** (Mow Matte
 
 | Rank | Campaign | Region (business ad geo, Presence) | Outreach / homeowner cluster | Cluster ZIPs | Suggested budget |
 | --- | --- | --- | --- | --- | --- |
-| Launch | **MM-Biz · Palm Coast** | Palm Coast + 15 mi | Palm Coast (matches site copy) | 32137, 32164, 32136 | $10/day |
-| 1 | **MM-Biz · South Florida** | Miami-Dade, Broward, Palm Beach counties | Pembroke Pines – Miramar – Weston (west Broward) | 33027, 33028, 33029, 33326, 33327, 33331, 33332 | $20/day (highest CPCs) |
-| 2 | **MM-Biz · Tampa Bay** | Hillsborough, Pasco, Pinellas counties | Brandon – Valrico – Riverview | 33510, 33511, 33594, 33596, 33569, 33578, 33579 | $15/day |
-| 3 | **MM-Biz · Orlando** | Orange, Seminole, Osceola, Lake counties | Winter Garden – Ocoee – Windermere | 34787, 34761, 34786 | $15/day |
-| 4 | **MM-Biz · Southwest FL** | Lee, Collier counties | Cape Coral | 33904, 33909, 33914, 33990, 33991, 33993 | $10/day |
-| 5 | **MM-Biz · Jacksonville** | Duval, St. Johns, Clay counties | Mandarin – Southside | 32223, 32256, 32257, 32258 | $10/day |
+| Launch | **MM-Biz · Palm Coast** | Palm Coast + 15 mi | Palm Coast (matches site copy) | 32137, 32164, 32136 | $5/day |
+| 1 | **MM-Biz · South Florida** | Miami-Dade, Broward, Palm Beach counties | Pembroke Pines – Miramar – Weston (west Broward) | 33027, 33028, 33029, 33326, 33327, 33331, 33332 | $5/day |
+| 2 | **MM-Biz · Tampa Bay** | Hillsborough, Pasco, Pinellas counties | Brandon – Valrico – Riverview | 33510, 33511, 33594, 33596, 33569, 33578, 33579 | $5/day |
+| 3 | **MM-Biz · Orlando** | Orange, Seminole, Osceola, Lake counties | Winter Garden – Ocoee – Windermere | 34787, 34761, 34786 | $5/day |
+| 4 | **MM-Biz · Southwest FL** | Lee, Collier counties | Cape Coral | 33904, 33909, 33914, 33990, 33991, 33993 | $5/day |
+| 5 | **MM-Biz · Jacksonville** | Duval, St. Johns, Clay counties | Mandarin – Southside | 32223, 32256, 32257, 32258 | $5/day |
 
-**Budget.** All six cost about $80/day (about $2,400/month). For a leaner start, run **Palm Coast + South Florida + Tampa Bay** (about $45/day). After 3–4 weeks, move budget to the regions with the lowest cost per *approved* provider, then add Orlando, Southwest FL and Jacksonville.
+**Budget (decided 2026-11-03): $5/day per campaign.** Six campaigns = $30/day (about $900/month). Treat this as a **discovery test**, not optimization: at $5/day, expect only about 1–3 clicks a day per region (South Florida fewer, because clicks cost more there). Let all six run **4–6 weeks unchanged**, then compare regions on clicks, sign-ups and approved providers. Google may spend up to 2× the daily budget on a single day, but stays within the monthly average (about $152/campaign).
 
 **Coverage on 2026-11-03:** the public Locate Lawn Care search returned **0 approved providers in every cluster ZIP above**. Every regional campaign therefore starts as a **provider-recruiting** campaign: recruit → approve listings → homeowner ads.
 
@@ -88,7 +88,7 @@ Copy rules for all ads (from the current site): SMS and text-message features ar
 
 ## 3. Campaign A: Business owners (Office sign-ups), one campaign per region
 
-- **Type:** Search only (turn off Display Network and Search Partners at first). **Bidding:** Maximize clicks with a $3.00 max CPC cap for 2–3 weeks. After ~30 `MM – Business signup` conversions, switch to Maximize conversions (then target CPA).
+- **Type:** Search only (turn off Display Network and Search Partners at first). **Bidding:** Maximize clicks with a **$2.00 max CPC cap**, so $5 buys at least 2 clicks a day. Keep it on Maximize clicks for the whole $5/day test: no region will reach the ~30 conversions Maximize conversions needs, so switch only after a region proves out and gets more budget.
 - **Build once, copy per region.** Create *MM-Biz · Palm Coast* from this template, then use *Copy/Paste* for each region in §0, changing only the location, budget, headline 11 and the `utm_campaign` value. Use **Presence** ("people in or regularly in"), not "interest", and exclude the other regions' areas so campaigns don't overlap.
 - **Budget (suggestion):** per region, as in the §0 table. A small area has little search volume, so more budget mostly buys pricier clicks. Put the rest of the effort into outreach.
 - **Landing:** `/pricing` for price/free terms; `/` for general software terms. Final URL suffix: `utm_source=google&utm_medium=cpc&utm_campaign=mm-biz-<region>&utm_term={keyword}` (region slug per campaign: `palmcoast`, `southfl`, `tampabay`, `orlando`, `swfl`, `jax`). Keep auto-tagging (gclid) on.
@@ -154,8 +154,8 @@ Callouts (≤25): `$0 Starter Plan` · `Up to 10 Customers Free` · `Built for S
   group by zip order by approved_listings desc;
   ```
   Target **only those ZIP codes** (Google Ads → Locations → Advanced search → ZIP codes), **Presence** only. If the query returns nothing, **don't launch Campaign B**. A request with no provider still saves, but paying for leads you can't serve wastes budget and the homeowner's time.
-- **Type:** Search only. **Bidding:** Maximize clicks with a $2.50 max CPC cap, then Maximize conversions on `MM – Homeowner request` after ~30 conversions. Set `MM – Directory search` as secondary.
-- **Budget (suggestion):** $10–15/day for a 4–6 week validation run once ≥3 approved providers cover cluster ZIPs (about $300–450/month). Raise it only if provider availability and recurring rate (§0 scorecard) hold up.
+- **Type:** Search only. **Bidding:** Maximize clicks with a $1.50 max CPC cap at $5/day. Switch to Maximize conversions on `MM – Homeowner request` only if the budget grows enough to reach ~30 conversions. Set `MM – Directory search` as secondary.
+- **Budget:** $5/day per region for a 4–6 week validation run, once ≥3 approved providers cover the cluster ZIPs. Raise it only if provider availability and recurring rate (§0 scorecard) hold up.
 - **Ad schedule:** all days. Optionally lower bids 9pm–6am.
 - **Landing:** `/lawn-care` (primary). "Near me / find" ad group → `/locate-lawn-care`. Final URL suffix: `utm_source=google&utm_medium=cpc&utm_campaign=mm-home-<region>&utm_term={keyword}`.
 
@@ -223,7 +223,7 @@ Don't claim: instant prices, guaranteed providers or dates, licensed/insured, "b
 
 ## 6. Recommendations (in priority order)
 
-1. **Run regional recruiting campaigns (§0), sent to `/pricing`, ranked by Keyword Planner volume.** Start lean with Palm Coast + South Florida + Tampa Bay (about $45/day), each with outreach to 10–20 owner-operators in its cluster, then shift budget to the lowest cost per approved provider. "$0 for up to 10 customers" is the strongest true hook you have. `/pricing` states it with the fee tiers, so the click matches the promise. Expect a learning phase: judge it on cost per sign-up after ~3 weeks or ~$400, not on day-3 numbers.
+1. **Run regional recruiting campaigns (§0), sent to `/pricing`, ranked by Keyword Planner volume.** All six at $5/day ($30/day total) for 4–6 weeks, each with outreach to 10–20 owner-operators in its cluster, then move budget toward the regions with the lowest cost per approved provider. Low volume means outreach will produce most recruits; the ads mainly show where demand is. "$0 for up to 10 customers" is the strongest true hook you have. `/pricing` states it with the fee tiers, so the click matches the promise. Expect a learning phase: judge it on cost per sign-up after ~3 weeks or ~$400, not on day-3 numbers.
 2. **Hold Campaign B** until ≥3 approved providers cover a ZIP cluster (§4). Each owner-operator approved in the cluster is what makes homeowner ads worth buying. Then run a 4–6 week homeowner test in those ZIPs only, judged on the §0 scorecard. When it launches, start with `/lawn-care` (2-step request) and leave `/locate-lawn-care` for "near me" terms only.
 3. **Landing fixes are in this PR:** `/early-access` is sign-up-first, and paid campaign traffic doesn't see the other audience's bar.
 4. **Recruit outside ads too:** phone calls and visits beat search ads for 10–20 local operators. Tag outreach links so the scorecard compares channels.
