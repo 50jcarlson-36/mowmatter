@@ -6,7 +6,7 @@ Two Search campaigns for mowmatter.com: lawn care **business owners** (Mow Matte
 
 | Conversion action (create in Google Ads) | Fires when | Where | Category | Goal role | Count |
 | --- | --- | --- | --- | --- | --- |
-| `MM – Business signup` | Business account sign-up form submitted in the embedded Office login (email/password), or a legacy early-access form saved | `/early-access` (`access.js` ← `office/dist/login.js`), `capture.js` | Sign-up | **Primary** (business campaign) | One |
+| `MM – Business signup` | (a) Email sign-up submitted in the embedded Office login on `/early-access`; (b) a **new** business account's first Google/Facebook sign-in or email confirmation on Office, which passes once through `mowmatter.com/welcome`; (c) a legacy early-access form saved | `access.js` ← `office/dist/login.js`; `welcome.js` ← `office/dist/mm-client.js`; `capture.js` | Sign-up | **Primary** (business campaign) | **One** (dedupes (a)+(b) from the same click) |
 | `MM – Homeowner request` | Lawn care request saved by the capture API | `/lawn-care` (`homeowner.js`) | Submit lead form | **Primary** (homeowner campaign) | One |
 | `MM – Directory search` | Locate Lawn Care search returns a result (including "no providers yet") | `/locate-lawn-care` (`directory.js`) | Other / Page view | **Secondary** (observe only, don't bid on it) | One |
 
@@ -15,16 +15,15 @@ The tag is `web/dist/ads-conversions.js`, loaded by `privacy-controls.js`. It:
 - loads nothing before **Allow analytics**, only on `mowmatter.com`/`www.mowmatter.com`, and never with Global Privacy Control or Do Not Track. Withdrawing consent stops conversions and deletes `_gcl_*` cookies.
 - stays fully off while IDs are placeholders: `AW-REPLACE_WITH_CONVERSION_ID` and the three `REPLACE_*_LABEL` values in `web/dist/privacy-controls.js` (copied to the root `privacy-controls.js` by `npm run sync:assets`).
 - sends only the conversion event. No form contents, emails, names, addresses or ZIPs. The homeowner conversion carries a random submission UUID as `transaction_id` for de-duplication only.
-- turns off remarketing and ad personalization (`ad_personalization: denied`, `allow_ad_personalization_signals: false`). Enhanced conversions are not used.
+- turns on Google's **restricted data processing** and turns off remarketing and ad personalization (`ad_personalization: denied`, `allow_ad_personalization_signals: false`). Enhanced conversions are not used.
 
 Consent was renewed (`mm-privacy-v1` version `2026-11-03`) because the choice now covers Google Ads measurement. Every visitor sees the banner once again, and an earlier "Allow" doesn't carry over.
 
 **Attribution into leads.** With consent, `gclid`, `gbraid`, `wbraid` and the five `utm_*` values from the landing URL are kept in `sessionStorage` (`mm-attribution-v1`) for that tab. They go into the existing `source` JSON on `mowmatter_leads` and `mowmatter_homeowner_requests`, so a click that lands on `/` and signs up on `/early-access` keeps its campaign. The capture function stores them only when `measurement_consent` is true and GPC/opt-out are absent (its allowlist now includes the three click IDs).
 
-**Not measured (known gaps):**
-- Business sign-ups through Google or Facebook sign-in leave mowmatter.com for office.mowmatter.com before the account exists, so they aren't counted. The email/password path is counted.
-- Sign-ups that start directly on office.mowmatter.com (not embedded) aren't counted. Office has no consent banner, so adding a tag there needs its own consent work first.
-- Email confirmation and first paid plan aren't tracked. Count "sign-up submitted" now, and consider an offline import of *business* conversions later.
+**Office sign-ups (Google/Facebook, direct, email confirmation).** Office loads **no Google code**, because it shows customer and homeowner records. Instead, `mm-client.js` marks a brand-new account on the business login page (`/login.html`). That means an email-confirmation link (`type=signup`) or a code exchange whose user was created in the last 15 minutes. Homeowner `customer-account.html` and Crew are never marked. When `login.js` would normally open the workspace, it goes once to `https://mowmatter.com/welcome?next=/index.html`. That page counts the conversion only if the visitor allowed analytics on mowmatter.com (and has no GPC), waits at most ~1.5 s for Google, then `location.replace`s to Office. `next` accepts only a single Office `*.html` path, so it can't be used as an open redirect. Without consent it forwards immediately.
+
+**Still not measured:** sign-ups by people who never allowed analytics on mowmatter.com, which is correct. Paid-plan upgrades are also not measured. Later, consider a server-side offline import of *business* conversions (paid plan started). That first needs Office to store the consented gclid with the new business account, which isn't done today. Never do this for homeowners.
 
 **Homeowner data rule.** Homeowner data must never be used for Mow Matter's own marketing. Don't upload homeowner emails, phones or requests to Google Ads (no Customer Match, no enhanced conversions for leads, no offline conversion import of homeowner records). Don't build remarketing audiences from homeowner pages. The homeowner conversion is a count of saved requests and nothing more.
 
@@ -44,7 +43,7 @@ Copy rules for all ads (from the current site): SMS and text-message features ar
 
 - **Type:** Search only (turn off Display Network and Search Partners at first). **Bidding:** Maximize clicks with a $3.00 max CPC cap for 2–3 weeks. After ~30 `MM – Business signup` conversions, switch to Maximize conversions (then target CPA).
 - **Geo:** Florida, **Presence** ("people in or regularly in"), not "interest". Widen to the US Southeast or the whole US once cost per sign-up is known.
-- **Budget (suggestion):** $15–25/day (about $450–750/month).
+- **Budget (suggestion):** $20/day to start (about $600/month). Raise it to $25–35/day if cost per sign-up is acceptable after the learning phase. While Campaign B is on hold, this is the whole budget.
 - **Landing:** `/pricing` for price/free terms; `/` for general software terms. Final URL suffix: `utm_source=google&utm_medium=cpc&utm_campaign=mm-biz-{campaignid}&utm_term={keyword}`. Keep auto-tagging (gclid) on.
 
 **Ad groups and keywords** (phrase "" and exact [] match):
@@ -94,6 +93,8 @@ Sitelinks (text ≤25, description lines ≤35):
 Callouts (≤25): `$0 Starter Plan` · `Up to 10 Customers Free` · `Built for Small Crews` · `Clear Platform Fees`
 
 ## 4. Campaign B: Homeowners (lawn care requests)
+
+> **Coverage check, 2026-11-03: hold this campaign.** The public Locate Lawn Care search (the same request the site makes) returned **0 approved providers** for 32137, 32164, 32136, 32110 (Palm Coast, Flagler Beach, Bunnell), 32174 and 32176 (Ormond Beach), 32084 and 32086 (St. Augustine), and 32118 (Daytona Beach). Paid homeowner clicks would produce requests nobody can serve yet. Launch Campaign B only when a ZIP cluster has **at least 3 approved providers** (re-run the query below), and spend on Campaign A until then. Recruiting providers *is* the business campaign's job.
 
 - **Only where approved directory providers exist.** The site says "Starting in Palm Coast, Florida". Before launch, list the ZIPs that approved listings cover, using a **read-only** query in the Supabase SQL editor (project `pzymmsfjgspvzbivzvkx`):
   ```sql
@@ -156,10 +157,28 @@ Don't claim: instant prices, guaranteed providers or dates, licensed/insured, "b
 1. **Account.** Create or confirm the Google Ads account (ads.google.com) and choose **Expert mode** so you can make a Search-only campaign without Performance Max. The draft you have open names a business called "Outvision". Confirm it belongs to the account you want to use for Mow Matter. Enter billing and accept Google's terms yourself.
 2. **Conversion actions.** Goals → Conversions → New → Website → *Set up manually / Use Google tag*. Create the three actions in §1 with the listed category, primary/secondary role, "One" count and a 30-day click window. From each action's "Event snippet", copy the `AW-…` ID (shared) and the `send_to` label after the `/`.
 3. **Fill the placeholders** in `web/dist/privacy-controls.js` (`adsId`, `adsBusinessSignup`, `adsHomeownerRequest`, `adsDirectorySearch`). Then run `npm run sync:assets && npm run check` in `api/`, commit, and merge. Merging to main publishes the marketing site through Cloudflare.
-4. **Deploy the other two pieces.** The `mowmatter-capture` Supabase function (click-ID allowlist) and Office (`office/dist/login.js` sign-up message) deploy separately from the marketing site. The site works without them, but click IDs aren't stored and email sign-ups aren't counted until they're deployed.
+4. **Deploy in this order** (each step is safe on its own):
+   1. Merge this PR. Cloudflare publishes `web/dist`, including `/welcome`, from main. Check that `https://mowmatter.com/welcome` loads before step 3.
+   2. Deploy the capture function (adds the click-ID allowlist):
+      `supabase functions deploy mowmatter-capture --project-ref pzymmsfjgspvzbivzvkx --no-verify-jwt`
+      (the function does its own auth, and it's deployed today with `verify_jwt=false`).
+   3. Render → **mowmatter-office** → *Manual Deploy* → *Deploy latest commit*. This brings the sign-up message and the new-account welcome hop. Then sign up a test business with Google and confirm you land in Office after the brief `/welcome` page.
+   Until steps 2 and 3 are done, click IDs aren't stored and Office sign-ups aren't counted. Nothing breaks in the meantime.
 5. **Link GA4** (property for stream `G-1T8EP3GRVX`) to Google Ads under Tools → Linked accounts, for reporting only. Leave Google Signals and ads personalization **off** in GA4.
 6. **Auto-tagging** on (Account settings). Add the final URL suffixes from §3/§4.
 7. **Verify after publishing:** open `https://mowmatter.com/?gclid=test`, click *Allow analytics*, and run a directory search. Then use Google Tag Assistant or the conversion action's diagnostics, which can take a few hours to show "Recording conversions". Check a test homeowner request row: `source.gclid` should be `test`.
-8. **Run the homeowner ZIP query** (§4). Only then create Campaign B, limited to those ZIPs.
+8. **Run the homeowner ZIP query** (§4). Create Campaign B only once ≥3 approved providers cover a ZIP cluster, limited to those ZIPs. As of 2026-11-03 there are none near Palm Coast.
 9. **Build campaigns** from §3/§4 and paste the headlines and descriptions as written. Set daily budgets yourself. Review the Search terms report weekly and add negatives.
-10. **Legal review.** The privacy policy still says we don't "share personal information for cross-context behavioral advertising". Conversion-only measurement with personalization off is usually treated differently from targeted advertising, but confirm with counsel before launch, especially for California visitors.
+10. **Legal review (lower risk now).** The notices no longer make the absolute "we don't share for cross-context behavioral advertising" claim. They say what happens: conversion measurement with consent, restricted data processing on, no targeting or remarketing. Reject, Privacy controls and GPC count as an opt-out of any sale or sharing. A quick counsel review before launch is still wise.
+
+## 6. Recommendations (in priority order)
+
+1. **Start with Campaign A only: Florida business owners, $20/day, sent to `/pricing`.** "$0 for up to 10 customers" is the strongest true hook you have. `/pricing` states it with the fee tiers, so the click matches the promise. Expect a learning phase: judge it on cost per sign-up after ~3 weeks or ~$400, not on day-3 numbers.
+2. **Hold Campaign B** until ≥3 approved providers cover a ZIP cluster (§4). Each business that signs up and gets approved in Palm Coast is what makes homeowner ads worth buying. When it launches, start with `/lawn-care` (2-step request) and leave `/locate-lawn-care` for "near me" terms only.
+3. **Make the sign-up page match the ad** (small copy change, not done here). On `/early-access`, put "Create your free Solo Starter account: up to 10 customers, $0/month" above the iframe and open the iframe on the sign-up state. Today the page reads login-first ("Business account & login"), which costs paid clicks.
+4. **Hide the "FOR YOUR HOME … Find lawn care" top bar for business ad traffic** (`utm_campaign` starting `mm-biz`). It's the first thing a paying business click sees, and it sends them to the homeowner flow.
+5. **Exact and phrase match only, Search Network only, Presence-only geo.** Skip Performance Max and Display for now. They need conversion volume and remarketing, which this setup deliberately doesn't use.
+6. **Bid only on `MM – Business signup` / `MM – Homeowner request`.** Keep directory search as secondary so Google doesn't optimize for cheap searches.
+7. **Weekly 15-minute review:** search terms → add negatives; pause keywords with no sign-up after ~$100 spend; pause headlines rated "Low" after two weeks.
+8. **Don't advertise unbuilt features:** no texting or SMS reminders, instant quotes, Featured Placement, guaranteed providers or "best/#1".
+9. **Re-check the homeowner data rule before any new Ads feature.** No Customer Match, no enhanced conversions, no audiences built from `/lawn-care` or `/locate-lawn-care` visitors.
