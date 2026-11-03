@@ -2,26 +2,36 @@
 
 Two Search campaigns for mowmatter.com: lawn care **business owners** (Mow Matter Office accounts) and **homeowners** looking for lawn service (requests and Locate Lawn Care). Nothing here creates an account, enters billing, accepts terms or spends money. Those are owner steps (see the end).
 
-## 0. Launch test market: one compact suburban cluster
+## 0. Markets: regional campaigns, compact clusters
 
-Launch in one metro and a few neighboring ZIP codes, not the whole state. Owner-operated mowing companies make money on route density: nearby recurring yards mean less drive time between jobs. Every ad, recruit and homeowner request in the test should land in the same few ZIPs.
+**Structure.** Run **one business-owner campaign per region**, each with its own budget, so a pricey market like Miami can't take another region's spend and each region's cost per sign-up can be compared directly. Inside each region, focus outreach, and later homeowner ads, on **one compact suburban cluster**: owner-operated mowing companies make money on route density, and nearby recurring yards mean less drive time between jobs.
 
-| | Cluster | ZIPs | Why |
-| --- | --- | --- | --- |
-| **Primary (recommended)** | **Brandon – Valrico – Riverview** (east Hillsborough, Tampa metro) | 33510, 33511 (Brandon) · 33594, 33596 (Valrico) · 33569, 33578, 33579 (Riverview) | Contiguous suburban single-family neighborhoods along the SR-60 / I-75 corridors. Seven adjoining ZIPs keep provider drive times short and are big enough to recruit 10–20 owner-operators. |
-| Alternate | **Winter Garden – Ocoee – Windermere** (West Orange, Orlando metro) | 34787, 34761, 34786 | A similar compact suburban cluster if Brandon recruiting stalls. Run it *instead of* Brandon, not alongside, so the test stays one cluster. |
+**Ranking "most lawn care need."** This is a judgment, not measured data: the count of owner-occupied single-family homes with yards (metro size and suburban growth) × the length of the mowing season (year-round in South and Southwest Florida). **Confirm it before spending:** in Google Ads → Tools → **Keyword Planner** → *Get search volume*, enter `lawn care service`, `lawn mowing service`, `lawn service near me` and `lawn care software` for each region's counties, and reorder the table by monthly searches.
 
-**Coverage on 2026-11-03:** the public Locate Lawn Care search returned 0 approved providers in all ten ZIPs above (and in the Palm Coast area). The test therefore runs in this order: **recruit providers → approve listings → turn on homeowner ads.**
+| Rank | Campaign | Region (business ad geo, Presence) | Outreach / homeowner cluster | Cluster ZIPs | Suggested budget |
+| --- | --- | --- | --- | --- | --- |
+| Launch | **MM-Biz · Palm Coast** | Palm Coast + 15 mi | Palm Coast (matches site copy) | 32137, 32164, 32136 | $10/day |
+| 1 | **MM-Biz · South Florida** | Miami-Dade, Broward, Palm Beach counties | Pembroke Pines – Miramar – Weston (west Broward) | 33027, 33028, 33029, 33326, 33327, 33331, 33332 | $20/day (highest CPCs) |
+| 2 | **MM-Biz · Tampa Bay** | Hillsborough, Pasco, Pinellas counties | Brandon – Valrico – Riverview | 33510, 33511, 33594, 33596, 33569, 33578, 33579 | $15/day |
+| 3 | **MM-Biz · Orlando** | Orange, Seminole, Osceola, Lake counties | Winter Garden – Ocoee – Windermere | 34787, 34761, 34786 | $15/day |
+| 4 | **MM-Biz · Southwest FL** | Lee, Collier counties | Cape Coral | 33904, 33909, 33914, 33990, 33991, 33993 | $10/day |
+| 5 | **MM-Biz · Jacksonville** | Duval, St. Johns, Clay counties | Mandarin – Southside | 32223, 32256, 32257, 32258 | $10/day |
 
-**Site copy decision needed before homeowner ads:** `/lawn-care` and `/locate-lawn-care` say "Starting in Palm Coast, Florida". If the test market is Brandon, those lines, and the homeowner ads in §4, need to name the chosen cluster instead. An ad that says Brandon must not land on a page that says Palm Coast.
+**Budget.** All six cost about $80/day (about $2,400/month). For a leaner start, run **Palm Coast + South Florida + Tampa Bay** (about $45/day). After 3–4 weeks, move budget to the regions with the lowest cost per *approved* provider, then add Orlando, Southwest FL and Jacksonville.
 
-### Recruiting target: 10–20 owner-operated mowing companies in the cluster
+**Coverage on 2026-11-03:** the public Locate Lawn Care search returned **0 approved providers in every cluster ZIP above**. Every regional campaign therefore starts as a **provider-recruiting** campaign: recruit → approve listings → homeowner ads.
 
-Ads alone won't recruit 20 local operators in seven ZIPs, because search volume for software in a small area is low. Run Campaign A (§3) alongside direct outreach:
+**Homeowner ads per region (held).** A homeowner campaign (`MM-Home · <region>`) may start only when (1) at least 3 approved providers cover that cluster's ZIPs, and (2) the site's homeowner copy names that area. The site says "Starting in Palm Coast, Florida" (kept on purpose), so **only Palm Coast can run homeowner ads without a copy change**. Other regions get homeowner campaigns when you update that line for them.
+
+**Recruiting pool caveat:** Palm Coast is smaller than the big-metro clusters. If it stalls below ~8 approved owner-operators after six weeks while a larger region recruits well, consider moving the homeowner launch (and the site copy) to that region.
+
+### Recruiting target: 10–20 owner-operated mowing companies per active cluster
+
+Ads alone won't recruit 20 local operators in a handful of ZIPs, because search volume for software in a small area is low. Run Campaign A (§3) alongside direct outreach:
 
 - **Build the list:** Google Maps / Business Profiles for "lawn care", "lawn mowing" and "lawn service" in each cluster ZIP. Keep owner-operated, 1–3 crew businesses. Skip franchises and commercial-only landscapers.
 - **Reach them where they are:** a phone call or visit first. Also flyers at local equipment dealers and outdoor power or small-engine shops (with the shop's permission), and local lawn-business Facebook groups and Nextdoor business pages. Don't text or auto-dial without prior consent (TCPA), and follow CAN-SPAM for cold email.
-- **Tag every recruit link** so outreach and ads can be compared: `https://mowmatter.com/early-access?utm_source=outreach&utm_medium=direct&utm_campaign=mm-biz-brandon` (`mm-biz` also hides the homeowner bar).
+- **Tag every recruit link** so outreach and ads can be compared: `https://mowmatter.com/early-access?utm_source=outreach&utm_medium=direct&utm_campaign=mm-biz-<region>`, for example `mm-biz-palmcoast` or `mm-biz-southfl` (`mm-biz` also hides the homeowner bar).
 - **Count a recruit only when they're approved:** Office account created, organic directory listing approved, and `service_zips` covering at least one cluster ZIP.
 
 ### What the test must validate (weekly scorecard)
@@ -76,12 +86,12 @@ Consent was renewed (`mm-privacy-v1` version `2026-11-03`) because the choice no
 
 Copy rules for all ads (from the current site): SMS and text-message features are **not active**, so don't mention texting or reminders. Customer notifications require activation. Instant price and quotes are in development. The homeowner flow is a request, not a booking, and has no guaranteed provider or date. Prices are confirmed before work.
 
-## 3. Campaign A: Business owners (Office sign-ups)
+## 3. Campaign A: Business owners (Office sign-ups), one campaign per region
 
 - **Type:** Search only (turn off Display Network and Search Partners at first). **Bidding:** Maximize clicks with a $3.00 max CPC cap for 2–3 weeks. After ~30 `MM – Business signup` conversions, switch to Maximize conversions (then target CPA).
-- **Geo:** the test cluster (§0) plus a **15-mile radius around Brandon, FL**, because operators who serve the cluster often live just outside it. Use **Presence** ("people in or regularly in"), not "interest". Don't widen to all of Florida during the test: a recruit outside the cluster adds no route density.
-- **Budget (suggestion):** $10–15/day (about $300–450/month). A small area has little search volume, so more budget mostly buys pricier clicks. Put the rest of the effort into outreach (§0). While Campaign B is on hold, this is the whole ad budget.
-- **Landing:** `/pricing` for price/free terms; `/` for general software terms. Final URL suffix: `utm_source=google&utm_medium=cpc&utm_campaign=mm-biz-{campaignid}&utm_term={keyword}`. Keep auto-tagging (gclid) on.
+- **Build once, copy per region.** Create *MM-Biz · Palm Coast* from this template, then use *Copy/Paste* for each region in §0, changing only the location, budget, headline 11 and the `utm_campaign` value. Use **Presence** ("people in or regularly in"), not "interest", and exclude the other regions' areas so campaigns don't overlap.
+- **Budget (suggestion):** per region, as in the §0 table. A small area has little search volume, so more budget mostly buys pricier clicks. Put the rest of the effort into outreach.
+- **Landing:** `/pricing` for price/free terms; `/` for general software terms. Final URL suffix: `utm_source=google&utm_medium=cpc&utm_campaign=mm-biz-<region>&utm_term={keyword}` (region slug per campaign: `palmcoast`, `southfl`, `tampabay`, `orlando`, `swfl`, `jax`). Keep auto-tagging (gclid) on.
 
 **Ad groups and keywords** (phrase "" and exact [] match):
 
@@ -107,11 +117,14 @@ Headlines (≤30):
 8. Job Photos & Check-Ins
 9. Plans From $0 to $129/Month
 10. Invoices and Online Payments
-11. Brandon & Riverview Lawn Pros
+11. For Palm Coast Lawn Pros
 12. Clear Platform Fees
 13. Create Your Free Account
 14. Route Planning for Lawn Pros
 15. Recurring Visits in One Place
+
+
+Headline 11 per region (all ≤30): For South Florida Lawn Pros · For Tampa Bay Lawn Pros · For Orlando Lawn Pros · For Southwest FL Lawn Pros · For Jacksonville Lawn Pros
 
 Descriptions (≤90):
 1. Organize customers, schedule recurring visits and assign jobs to your crew in one place.
@@ -131,9 +144,9 @@ Callouts (≤25): `$0 Starter Plan` · `Up to 10 Customers Free` · `Built for S
 
 ## 4. Campaign B: Homeowners (lawn care requests)
 
-> **Coverage check, 2026-11-03: hold this campaign.** The public Locate Lawn Care search (the same request the site makes) returned **0 approved providers** in the Brandon, Valrico and Riverview test-cluster ZIPs, in the West Orange alternate, and in 9 ZIPs around Palm Coast, Ormond Beach, St. Augustine and Daytona Beach. Paid homeowner clicks would produce requests nobody can serve yet. Launch Campaign B only when a ZIP cluster has **at least 3 approved providers** (re-run the query below), and spend on Campaign A until then. Recruiting providers *is* the business campaign's job.
+> **Coverage check, 2026-11-03: hold this campaign.** The public Locate Lawn Care search (the same request the site makes) returned **0 approved providers** in the Palm Coast cluster, the Brandon and West Orange expansion clusters, and nearby Bunnell, Ormond Beach, St. Augustine and Daytona Beach. Paid homeowner clicks would produce requests nobody can serve yet. Launch Campaign B only when a ZIP cluster has **at least 3 approved providers** (re-run the query below), and spend on Campaign A until then. Recruiting providers *is* the business campaign's job.
 
-- **Only the test cluster, and only ZIPs with approved providers.** Update the site's "Starting in Palm Coast, Florida" line to the cluster first (§0). Before launch, list the ZIPs that approved listings cover, using a **read-only** query in the Supabase SQL editor (project `pzymmsfjgspvzbivzvkx`):
+- **Only the test cluster, and only ZIPs with approved providers.** The site's "Starting in Palm Coast, Florida" copy matches the launch cluster. Before launch, list the ZIPs that approved listings cover, using a **read-only** query in the Supabase SQL editor (project `pzymmsfjgspvzbivzvkx`):
   ```sql
   select zip, count(*) as approved_listings
   from mowmatter_directory_listings, unnest(service_zips) as zip
@@ -144,14 +157,14 @@ Callouts (≤25): `$0 Starter Plan` · `Up to 10 Customers Free` · `Built for S
 - **Type:** Search only. **Bidding:** Maximize clicks with a $2.50 max CPC cap, then Maximize conversions on `MM – Homeowner request` after ~30 conversions. Set `MM – Directory search` as secondary.
 - **Budget (suggestion):** $10–15/day for a 4–6 week validation run once ≥3 approved providers cover cluster ZIPs (about $300–450/month). Raise it only if provider availability and recurring rate (§0 scorecard) hold up.
 - **Ad schedule:** all days. Optionally lower bids 9pm–6am.
-- **Landing:** `/lawn-care` (primary). "Near me / find" ad group → `/locate-lawn-care`. Final URL suffix: `utm_source=google&utm_medium=cpc&utm_campaign=mm-home-{campaignid}&utm_term={keyword}`.
+- **Landing:** `/lawn-care` (primary). "Near me / find" ad group → `/locate-lawn-care`. Final URL suffix: `utm_source=google&utm_medium=cpc&utm_campaign=mm-home-<region>&utm_term={keyword}`.
 
 **Ad groups and keywords:**
 
 | Ad group | Keywords | Landing |
 | --- | --- | --- |
-| Lawn mowing | "lawn mowing service", "lawn mowing brandon", "grass cutting service", [lawn cutting service], "lawn service riverview" | `/lawn-care` |
-| Lawn care general | "lawn care service", "lawn care valrico", "yard maintenance service", "lawn care company" | `/lawn-care` |
+| Lawn mowing | "lawn mowing service", "lawn mowing palm coast", "grass cutting service", [lawn cutting service], "lawn service palm coast" | `/lawn-care` |
+| Lawn care general | "lawn care service", "lawn care flagler beach", "yard maintenance service", "lawn care company" | `/lawn-care` |
 | Cleanup & extras | "yard cleanup service", "hedge trimming service", "leaf removal service", "mulch installation" | `/lawn-care` |
 | Find near me | "lawn care near me", "lawn mowing near me", "lawn service near me" | `/locate-lawn-care` |
 
@@ -160,7 +173,7 @@ Callouts (≤25): `$0 Starter Plan` · `Up to 10 Customers Free` · `Built for S
 **Responsive search ad:**
 
 Headlines (≤30):
-1. Lawn Care in Brandon, FL
+1. Lawn Care in Palm Coast, FL
 2. Need Your Lawn Mowed?
 3. Request Lawn Care Online
 4. Mowing, Edging & Hedges
@@ -179,10 +192,10 @@ Headlines (≤30):
 Descriptions (≤90):
 1. Tell us your address and the services you need. We review local availability and reply.
 2. Mowing, edging, hedges, leaves, cleanup or mulch. Request in 2 steps. No payment needed.
-3. Serving Brandon, Valrico and Riverview. Provider, price and date confirmed before work.
+3. Starting in Palm Coast, Florida. Provider, price and date are confirmed before any work.
 4. Search approved local lawn care providers by ZIP code, or send one simple request.
 
-Display path: `lawn-care` / `brandon`
+Display path: `lawn-care` / `palm-coast`
 
 Sitelinks: Request Lawn Care → `/lawn-care` ("Two steps, no payment needed" / "Pick services and frequency"); Find Providers → `/locate-lawn-care` ("Search approved listings" / "Search by ZIP or location").
 Callouts: `No Payment to Request` · `Weekly or One-Time` · `Price Confirmed First` · `Approved Local Listings`
@@ -210,7 +223,7 @@ Don't claim: instant prices, guaranteed providers or dates, licensed/insured, "b
 
 ## 6. Recommendations (in priority order)
 
-1. **Start with recruiting in one cluster: Campaign A in Brandon–Valrico–Riverview + 15 mi at $10–15/day, sent to `/pricing`, plus direct outreach to 10–20 owner-operators (§0).** "$0 for up to 10 customers" is the strongest true hook you have. `/pricing` states it with the fee tiers, so the click matches the promise. Expect a learning phase: judge it on cost per sign-up after ~3 weeks or ~$400, not on day-3 numbers.
+1. **Run regional recruiting campaigns (§0), sent to `/pricing`, ranked by Keyword Planner volume.** Start lean with Palm Coast + South Florida + Tampa Bay (about $45/day), each with outreach to 10–20 owner-operators in its cluster, then shift budget to the lowest cost per approved provider. "$0 for up to 10 customers" is the strongest true hook you have. `/pricing` states it with the fee tiers, so the click matches the promise. Expect a learning phase: judge it on cost per sign-up after ~3 weeks or ~$400, not on day-3 numbers.
 2. **Hold Campaign B** until ≥3 approved providers cover a ZIP cluster (§4). Each owner-operator approved in the cluster is what makes homeowner ads worth buying. Then run a 4–6 week homeowner test in those ZIPs only, judged on the §0 scorecard. When it launches, start with `/lawn-care` (2-step request) and leave `/locate-lawn-care` for "near me" terms only.
 3. **Landing fixes are in this PR:** `/early-access` is sign-up-first, and paid campaign traffic doesn't see the other audience's bar.
 4. **Recruit outside ads too:** phone calls and visits beat search ads for 10–20 local operators. Tag outreach links so the scorecard compares channels.
