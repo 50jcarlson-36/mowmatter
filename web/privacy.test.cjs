@@ -332,3 +332,17 @@ test("welcome page records a business signup only with consent and only forwards
     assert.equal(w.document.getElementById("welcome-link").href, expected);
   }
 });
+test("paid campaign landings hide the cross-audience bar for the tab; organic visits keep it", () => {
+  const html =
+    '<!doctype html><body><aside id="audience-banner"></aside><button id="dismiss-banner"></button><nav></nav></body>';
+  for (const [query, hidden] of [
+    ["?utm_campaign=mm-biz-123", true],
+    ["?utm_campaign=mm-home-9", true],
+    ["?utm_campaign=newsletter", false],
+    ["", false],
+  ]) {
+    const w = new JSDOM(html, { url: "https://mowmatter.com/pricing" + query, runScripts: "outside-only" }).window;
+    w.eval(fs.readFileSync(__dirname + "/dist/shell.js", "utf8"));
+    assert.equal(w.document.getElementById("audience-banner").hidden, hidden, query);
+  }
+});

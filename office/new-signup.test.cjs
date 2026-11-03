@@ -20,3 +20,13 @@ test('business login sends brand-new top-level accounts through the consent-gate
  const login=fs.readFileSync(__dirname+'/dist/login.js','utf8');
  assert.match(login,/MM\.takeNewSignup\?\.\(\)&&location\.hostname==='office\.mowmatter\.com'\)location\.assign\('https:\/\/mowmatter\.com\/welcome\?next=\/index\.html'\)/);
 });
+test('intent=signup puts Create business account first without changing what each button does',()=>{
+ const html=fs.readFileSync(__dirname+'/dist/login.html','utf8').replace(/<script[^>]*><\/script>/g,'');
+ for(const [url,first]of[['https://office.mowmatter.com/login.html?intent=signup','signup'],['https://office.mowmatter.com/login.html','login']]){
+  const w=new JSDOM(html,{url,runScripts:'outside-only',virtualConsole:new VirtualConsole()}).window;
+  w.MowNotice={markup:()=>'',validate:()=>({})};w.MM={ready:new Promise(()=>{}),mountGoogleLogin:()=>{}};
+  w.eval(fs.readFileSync(__dirname+'/dist/login.js','utf8'));
+  const buttons=[...w.document.querySelectorAll('#business-login button[type=submit]')];
+  assert.equal(buttons[0].value,first);assert.match(buttons[0].className,/primary/);assert.match(buttons[1].className,/secondary/);
+ }
+});
