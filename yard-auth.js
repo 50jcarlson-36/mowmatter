@@ -3,7 +3,10 @@ try{session=JSON.parse(localStorage.getItem('mm-auth-v1'))}catch{}
 function save(s){session=s;try{if(s)localStorage.setItem('mm-auth-v1',JSON.stringify(s));else localStorage.removeItem('mm-auth-v1')}catch{throw Error('Enable browser storage to keep your account signed in')}}
 async function request(path,body,method='POST',token){const r=await fetch(base+'/auth/v1/'+path,{method,headers:{apikey:key,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(20000)});const d=await r.json();if(!r.ok)throw Error(d.msg||d.error_description||d.message||'Could not connect to your account');return d}
 async function refresh(){if(refreshPending)return refreshPending;if(!session?.refresh_token)throw Error('Sign in to continue');refreshPending=(async()=>{const d=await request('token?grant_type=refresh_token',{refresh_token:session.refresh_token});save({...d,expires_at:Date.now()+d.expires_in*1000})})();try{await refreshPending}finally{refreshPending=null}}
-const preferenceKey='mm-launch-updates-pending';
+const preferenceKey='mm-launch-updates-pending',newSignupKey='mm-new-business-signup';
+// Business login only: lets login.js route a brand-new account through the marketing site's consent-gated conversion page once.
+function markNewSignup(){if(/\/login(\.html)?$/.test(location.pathname))try{sessionStorage.setItem(newSignupKey,'1')}catch{}}
+function takeNewSignup(){try{const v=sessionStorage.getItem(newSignupKey)==='1';sessionStorage.removeItem(newSignupKey);return v}catch{return false}}
 function pendingPreference(){const value=sessionStorage.getItem(preferenceKey);return value==='true'?true:value==='false'?false:undefined}
 function rememberPreference(value){if(typeof value==='boolean')sessionStorage.setItem(preferenceKey,String(value))}
 async function saveLaunchUpdates(enabled){if(typeof enabled!=='boolean'||!session)throw Error('Sign in to save your update preference');if(session.expires_at<Date.now()+30000)await refresh();const response=await fetch(base+'/rest/v1/rpc/mm_launch_updates',{method:'POST',headers:{apikey:key,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify({p_enabled:enabled}),signal:AbortSignal.timeout(20000)});if(!response.ok)throw Error('Signed in, but your launch-update preference could not be saved. Please retry.');sessionStorage.removeItem(preferenceKey);return response.json()}
@@ -24,13 +27,14 @@ const ready=(async()=>{
   const d=await request('token?grant_type=pkce',{auth_code:code,code_verifier:flow.verifier});
   save({...d,expires_at:Date.now()+d.expires_in*1000});
   if(flow.acceptance){const user=await request('user',{data:flow.acceptance},'PUT',session.access_token);save({...session,user});}
+  if(Date.now()-Date.parse(d.user?.created_at)<900000)markNewSignup();
   sessionStorage.removeItem('mm-recovery');localStorage.setItem('mm-crew-mode','live');
  }else if(h.has('access_token')){
   const token=h.get('access_token'),rt=h.get('refresh_token'),type=h.get('type');
   history.replaceState(null,'',location.pathname+location.search);if(!rt)return;
   const user=await request('user',undefined,'GET',token);
   save({user,access_token:token,refresh_token:rt,expires_at:Date.now()+Number(h.get('expires_in')||3600)*1000});
-  if(type==='signup')rememberPreference(user.user_metadata?.launch_updates);
+  if(type==='signup'){rememberPreference(user.user_metadata?.launch_updates);markNewSignup();}
   recovery=type==='recovery';if(recovery)sessionStorage.setItem('mm-recovery','1');
  }else if(h.has('error')||url.searchParams.has('error')){
   sessionStorage.removeItem(oauthKey);
@@ -70,7 +74,7 @@ function mountGoogleLogin(form,options={}){
  if(oauthRequested&&options.autoStart!==false){const provider=oauthRequested;oauthRequested=null;void (provider==='facebook'?facebook:button).onclick();}
 }
 
-window.MM={ready,saveLaunchUpdates,get launchUpdatesChoice(){return pendingPreference()},socialSignIn,googleSignIn:()=>socialSignIn('google'),facebookSignIn:()=>socialSignIn('facebook'),mountGoogleLogin,get authError(){return authError},async ensureSession(){await ready;if(!session)throw Error('Sign in to continue');if(session.expires_at<Date.now()+30000)await refresh();return session},get session(){return session},get recovery(){return recovery},
+window.MM={ready,saveLaunchUpdates,takeNewSignup,get launchUpdatesChoice(){return pendingPreference()},socialSignIn,googleSignIn:()=>socialSignIn('google'),facebookSignIn:()=>socialSignIn('facebook'),mountGoogleLogin,get authError(){return authError},async ensureSession(){await ready;if(!session)throw Error('Sign in to continue');if(session.expires_at<Date.now()+30000)await refresh();return session},get session(){return session},get recovery(){return recovery},
 async signIn(email,password){const d=await request('token?grant_type=password',{email,password});save({...d,expires_at:Date.now()+d.expires_in*1000});recovery=false;sessionStorage.removeItem('mm-recovery');return d},
 async signUp(email,password,launchUpdates,acceptance){rememberPreference(launchUpdates);return request('signup?redirect_to='+encodeURIComponent(typeof launchUpdates==='boolean'?location.origin+'/login.html':redirect()),{email,password,data:{...(typeof launchUpdates==='boolean'?{launch_updates:launchUpdates}:{}),...(acceptance||{})}})},
 async resend(email){return request('resend',{type:'signup',email,options:{email_redirect_to:redirect()}})},

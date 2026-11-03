@@ -26,6 +26,7 @@ async function session({ testIds = false, gpc = false, width = 1280 } = {}) {
       const data = body.kind === "directory" ? { ok: true, location: body.zip, listings: [{ id: "x1", company_name: "Test Lawn Co", description: "Test listing", services: ["mowing"], featured: false, distance_miles: 2 }] } : { ok: true };
       return route.fulfill({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body: JSON.stringify(data) });
     }
+    if (url.hostname === "office.mowmatter.com") return route.fulfill({ status: 200, contentType: "text/html", body: "<title>Office</title>" });
     if (url.hostname !== "mowmatter.com") return route.fulfill({ status: 204, body: "" });
     let path = url.pathname === "/" ? "/index.html" : url.pathname;
     if (!existsSync(dist + path) && existsSync(dist + path + ".html")) path += ".html";
@@ -104,6 +105,20 @@ for (const gpc of [false, true]) {
   const after = await s.page.evaluate(() => window.mmAds.convert("business_signup"));
   check(after === false && s.google.length === before, "withdrawal stops conversions");
   check(s.cspErrors.length === 0, "no CSP violations with tags loaded (" + s.cspErrors.length + ")");
+  await s.browser.close();
+}
+
+// 3b. New Office accounts pass through /welcome: conversion only with consent, always forwarded to Office.
+for (const consent of [true, false]) {
+  const s = await session({ testIds: true });
+  await s.page.goto("https://mowmatter.com/pricing"); await wait(s.page);
+  await s.page.click(`#mm-cookie-choice [data-choice=${consent ? "yes" : "no"}]`);
+  const before = s.google.length;
+  await s.page.goto("https://mowmatter.com/welcome?next=/index.html");
+  await s.page.waitForURL("https://office.mowmatter.com/index.html", { timeout: 5000 }).catch(() => {});
+  const reached = s.page.url() === "https://office.mowmatter.com/index.html";
+  check(reached, `welcome (${consent ? "allowed" : "rejected"}): forwarded to Office`);
+  check(consent ? s.google.length > before : s.google.length === 0, `welcome (${consent ? "allowed" : "rejected"}): Google contacted only with consent (${s.google.length - before})`);
   await s.browser.close();
 }
 

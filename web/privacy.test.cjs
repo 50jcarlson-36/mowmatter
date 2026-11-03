@@ -306,3 +306,29 @@ test("ad-click and campaign attribution is kept only with consent", () => {
   assert.equal(Object.keys(w.mmPrivacy.source()).length, 0);
   assert.equal(w.sessionStorage.getItem("mm-attribution-v1"), null);
 });
+test("welcome page records a business signup only with consent and only forwards to Office", () => {
+  for (const [consent, next, expected] of [
+    [true, "/index.html", "https://office.mowmatter.com/index.html"],
+    [false, "/settings.html", "https://office.mowmatter.com/settings.html"],
+    [true, "//evil.example/x.html", "https://office.mowmatter.com/index.html"],
+    [true, "https://evil.example", "https://office.mowmatter.com/index.html"],
+  ]) {
+    const d = new JSDOM(
+      fs.readFileSync(__dirname + "/dist/welcome.html", "utf8").replace(/<script[^>]*><\/script>/g, ""),
+      { url: "https://mowmatter.com/welcome?next=" + encodeURIComponent(next), runScripts: "outside-only" },
+    );
+    const w = d.window,
+      calls = [],
+      went = [];
+    w.__went = (t) => went.push(t);
+    w.mmPrivacy = { allowed: () => consent };
+    w.mmAds = { convert: (name, opts) => (calls.push(name), opts.event_callback(), true) };
+    w.eval(
+      fs.readFileSync(__dirname + "/dist/welcome.js", "utf8").replace("location.replace(target)", "window.__went(target)"),
+    );
+    assert.deepEqual([...calls], consent ? ["business_signup"] : []);
+    assert.equal(went.length, 1);
+    assert.equal(went[0], expected);
+    assert.equal(w.document.getElementById("welcome-link").href, expected);
+  }
+});
