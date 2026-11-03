@@ -1,9 +1,19 @@
 @tailwind utilities;
-#mm-activity-toast { box-sizing: border-box; right: 24px; bottom: 24px; width: min(390px, calc(100vw - 32px)); font-family: Arial, sans-serif; opacity: 0; transform: translateY(18px); transition: opacity .25s ease, transform .25s ease; }
-#mm-activity-toast[hidden] { display: none; }
-#mm-activity-toast.mm-toast-visible { opacity: 1; transform: translateY(0); }
-#mm-activity-toast .mm-toast-close { flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: #ffffff; cursor: pointer; }
-#mm-activity-toast .mm-toast-close:hover { background: #1e293b; }
-#mm-activity-toast .mm-toast-close:focus-visible { outline: 3px solid #22c55e; outline-offset: 2px; }
-@media(max-width: 640px) { #mm-activity-toast { left: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); } }
-@media(prefers-reduced-motion: reduce) { #mm-activity-toast { transition: none; transform: none; } }
+#mm-activity-toast{box-sizing:border-box;position:fixed;z-index:50;right:24px;bottom:24px;width:min(376px,calc(100vw - 32px));overflow:hidden;border:1px solid #e7b56e;border-radius:20px;background:#fff6e5;color:#16372b;box-shadow:0 18px 55px #10291d33,0 4px 14px #10291d1a;font-family:Arial,sans-serif;opacity:0;transform:translateY(18px);transition:opacity .25s ease,transform .25s ease}
+#mm-activity-toast[hidden]{display:none}
+#mm-activity-toast.mm-toast-visible{opacity:1;transform:translateY(0)}
+#mm-activity-toast .mm-promo-top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 8px 4px 20px;background:#f5bf63;border-bottom:1px solid #e7b56e}
+#mm-activity-toast .mm-promo-label{font-size:10px;font-weight:800;letter-spacing:.09em;line-height:1.4;color:#55350c}
+#mm-activity-toast .mm-toast-close{flex-shrink:0;display:flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;color:#55350c;cursor:pointer}
+#mm-activity-toast .mm-toast-close:hover{background:#55350c12}
+#mm-activity-toast .mm-promo-body{position:relative;padding:20px}
+#mm-activity-toast .mm-promo-icon{position:absolute;right:20px;top:18px;display:flex;align-items:center;justify-content:center;width:38px;height:38px;border:1px solid #e8c796;border-radius:12px;color:#87500c;background:#ffedca}
+#mm-activity-toast .mm-promo-audience{margin:0 48px 12px 0;color:#87500c;font-size:10px;font-weight:800;letter-spacing:.1em;line-height:1.5}
+#mm-activity-toast .mm-promo-title{margin:0 38px 10px 0;font-size:23px;font-weight:800;letter-spacing:-.035em;line-height:1.13;text-wrap:balance}
+#mm-activity-toast .mm-promo-message{margin:0;color:#284b3b;font-size:14px;line-height:1.5}
+#mm-activity-toast .mm-promo-detail{margin:8px 0 0;color:#647166;font-size:12px;line-height:1.5}
+#mm-activity-toast .mm-promo-cta{box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;width:100%;min-height:46px;margin-top:18px;padding:12px 15px;border:1px solid #173d2c;border-radius:10px;background:#173d2c;color:#fff;font-size:13px;font-weight:700;line-height:1.4;text-decoration:none}
+#mm-activity-toast .mm-promo-cta:hover{background:#24543e}
+#mm-activity-toast :focus-visible{outline:3px solid #87500c;outline-offset:3px}
+@media(max-width:640px){#mm-activity-toast{left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));width:auto;max-width:376px;margin-left:auto}#mm-activity-toast .mm-promo-title{font-size:21px}#mm-activity-toast .mm-promo-body{padding:16px 20px}}
+@media(prefers-reduced-motion:reduce){#mm-activity-toast{transition:none;transform:none}}
