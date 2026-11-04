@@ -30,3 +30,34 @@ test('intent=signup puts Create business account first without changing what eac
   assert.equal(buttons[0].value,first);assert.match(buttons[0].className,/primary/);assert.match(buttons[1].className,/secondary/);
  }
 });
+test('consented ad-click ID from mowmatter.com is kept 7 days, cleared on request, and sent once to the owner workspace',async()=>{
+ const html=fs.readFileSync(__dirname+'/dist/login.html','utf8').replace(/<script[^>]*><\/script>/g,'');
+ const parent=new JSDOM('',{url:'https://mowmatter.com/early-access'}).window;
+ const w=new JSDOM(html,{url:'https://office.mowmatter.com/login.html?intent=signup',referrer:'https://mowmatter.com/',runScripts:'outside-only',virtualConsole:new VirtualConsole()}).window;
+ Object.defineProperty(w,'parent',{value:parent});parent.postMessage=()=>{};
+ w.MowNotice={markup:()=>'',validate:()=>({})};w.MM={ready:new Promise(()=>{}),mountGoogleLogin:()=>{}};
+ w.eval(fs.readFileSync(__dirname+'/dist/login.js','utf8'));
+ const send=(data,origin='https://mowmatter.com',source=parent)=>w.dispatchEvent(new w.MessageEvent('message',{data,origin,source}));
+ send({type:'mm-ad-click',gclid:'Cj0KCQiA_test',consented_at:123},'https://evil.example');
+ send({type:'mm-ad-click',gclid:'bad id!',consented_at:123});
+ assert.equal(w.localStorage.getItem('mm-ad-click'),null);
+ send({type:'mm-ad-click',gclid:'Cj0KCQiA_test',consented_at:123});
+ const kept=JSON.parse(w.localStorage.getItem('mm-ad-click'));
+ assert.equal(kept.gclid,'Cj0KCQiA_test');assert(kept.expires>Date.now()+6.9*864e5&&kept.expires<=Date.now()+7*864e5);
+ send({type:'mm-ad-click-clear'});assert.equal(w.localStorage.getItem('mm-ad-click'),null);
+ // Office side: billing.js sends the kept ID with the owner's session, then forgets it.
+ const office=new JSDOM('',{url:'https://office.mowmatter.com/index.html',runScripts:'outside-only'}).window,calls=[];
+ office.MM={ensureSession:async()=>{},session:{access_token:'owner-token'}};office.AbortSignal=AbortSignal;
+ office.fetch=async(u,o)=>{calls.push({u,o});return {ok:true,json:async()=>({saved:true})}};
+ office.eval(fs.readFileSync(__dirname+'/dist/billing.js','utf8'));
+ assert.equal(await office.saveMowAdClick('company-1'),false);assert.equal(calls.length,0);
+ office.localStorage.setItem('mm-ad-click',JSON.stringify({gclid:'Cj0KCQiA_test',consented_at:123,expires:Date.now()+1000}));
+ assert.equal(await office.saveMowAdClick('company-1'),true);
+ assert.equal(calls[0].u,'https://mowmatter-property.onrender.com/api/billing/ad-click');
+ assert.deepEqual(JSON.parse(calls[0].o.body),{company_id:'company-1',gclid:'Cj0KCQiA_test',consented_at:123});
+ assert.equal(calls[0].o.headers.Authorization,'Bearer owner-token');
+ assert.equal(office.localStorage.getItem('mm-ad-click'),null);
+ office.localStorage.setItem('mm-ad-click',JSON.stringify({gclid:'Cj0KCQiA_test',consented_at:123,expires:Date.now()-1}));
+ assert.equal(await office.saveMowAdClick('company-1'),true);assert.equal(calls.length,1);assert.equal(office.localStorage.getItem('mm-ad-click'),null);
+ assert.match(fs.readFileSync(__dirname+'/dist/office-live.js','utf8'),/if\(!owner\)\{[^}]*return\}void window\.saveMowAdClick\?\.\(data\.company\.id\);/);
+});

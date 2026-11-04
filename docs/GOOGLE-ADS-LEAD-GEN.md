@@ -55,7 +55,8 @@ Set the go/no-go numbers yourself. The starting gates below are suggestions, not
 
 | Conversion action (create in Google Ads) | Fires when | Where | Category | Goal role | Count |
 | --- | --- | --- | --- | --- | --- |
-| `MM – Business signup` | (a) Email sign-up submitted in the embedded Office login on `/early-access`; (b) a **new** business account's first Google/Facebook sign-in or email confirmation on Office, which passes once through `mowmatter.com/welcome`; (c) a legacy early-access form saved | `access.js` ← `office/dist/login.js`; `welcome.js` ← `office/dist/mm-client.js`; `capture.js` | Sign-up | **Primary** (business campaign) | **One** (dedupes (a)+(b) from the same click) |
+| `MM – Paid subscription` | A business's **first** paid Office subscription (Growth or Scale) is confirmed by Stripe, for a business whose owner arrived from a Google ad and allowed analytics on mowmatter.com before signing up. Value = the first invoice actually paid, in its currency | Server side: billing webhook → `mow_ad_clicks` → HTTPS CSV that Google Ads fetches on a schedule (§1a) | Purchase | **Primary** (business campaign) | **One** |
+| `MM – Business signup` | (a) Email sign-up submitted in the embedded Office login on `/early-access`; (b) a **new** business account's first Google/Facebook sign-in or email confirmation on Office, which passes once through `mowmatter.com/welcome`; (c) a legacy early-access form saved | `access.js` ← `office/dist/login.js`; `welcome.js` ← `office/dist/mm-client.js`; `capture.js` | Sign-up | **Secondary** (business campaign; observe and use as the early signal while purchases are rare) | **One** (dedupes (a)+(b) from the same click) |
 | `MM – Homeowner request` | Lawn care request saved by the capture API | `/lawn-care` (`homeowner.js`) | Submit lead form | **Primary** (homeowner campaign) | One |
 | `MM – Directory search` | Locate Lawn Care search returns a result (including "no providers yet") | `/locate-lawn-care` (`directory.js`) | Other / Page view | **Secondary** (observe only, don't bid on it) | One |
 
@@ -72,7 +73,27 @@ Consent was renewed (`mm-privacy-v1` version `2026-11-03`) because the choice no
 
 **Office sign-ups (Google/Facebook, direct, email confirmation).** Office loads **no Google code**, because it shows customer and homeowner records. Instead, `mm-client.js` marks a brand-new account on the business login page (`/login.html`). That means an email-confirmation link (`type=signup`) or a code exchange whose user was created in the last 15 minutes. Homeowner `customer-account.html` and Crew are never marked. When `login.js` would normally open the workspace, it goes once to `https://mowmatter.com/welcome?next=/index.html`. That page counts the conversion only if the visitor allowed analytics on mowmatter.com (and has no GPC), waits at most ~1.5 s for Google, then `location.replace`s to Office. `next` accepts only a single Office `*.html` path, so it can't be used as an open redirect. Without consent it forwards immediately.
 
-**Still not measured:** sign-ups by people who never allowed analytics on mowmatter.com, which is correct. Paid-plan upgrades are also not measured. Later, consider a server-side offline import of *business* conversions (paid plan started). That first needs Office to store the consented gclid with the new business account, which isn't done today. Never do this for homeowners.
+**Still not measured:** sign-ups and purchases by people who never allowed analytics on mowmatter.com, which is correct. Plan upgrades, renewals and add-ons after the first paid subscription are not counted again.
+
+### 1a. Paid subscriptions (offline conversion import, business accounts only)
+
+The real goal is a set-up business paying for Growth or Scale, not just a sign-up. Office still loads no Google code, so purchases are sent from the server. **It is off until `GOOGLE_ADS_PURCHASE_ENABLED=true` is set on the API (Render `mowmatter-property`).** While it's off the API stores no click IDs and serves no file.
+
+1. **Hand-off (consent only).** On `/early-access`, once the embedded Office sign-up frame is ready, `access.js` posts the landing page's `gclid` to `https://office.mowmatter.com`, but only if `mmPrivacy.allowed()` (analytics allowed, no GPC/DNT). Otherwise it posts a "clear" message. It also re-sends when the choice changes on that page, so withdrawing there clears Office's copy.
+2. **Office keeps it up to 7 days.** `office/dist/login.js` (embedded, parent origin checked) saves `{gclid, consented_at}` in Office `localStorage` (`mm-ad-click`) for up to 7 days. This covers email confirmation in a new tab and the Google/Facebook buttons, which leave the frame for a top-level Office page.
+3. **Saved with the company.** When an **owner** opens the workspace, `office-live.js` → `billing.js` `saveMowAdClick()` sends it with the owner's session to `POST /api/billing/ad-click`. The API checks owner access and the click ID format, rejects consent times older than 8 days, and calls `mow_ad_click_save`. The first click per company wins. The local copy is then deleted.
+4. **Purchase.** The Stripe billing webhook already resolves each subscription event. When the subscription is paid and active, it calls `mow_ad_purchase_record`, which records the paid amount, currency and paid time **once per company**, and only within 90 days of the click. A failure here is logged and never fails billing.
+5. **Upload.** `GET https://mowmatter-property.onrender.com/api/billing/ads/purchases.csv` (HTTP Basic auth) returns Google's click-conversion template with purchases from the last 30 days:
+   ```
+   Parameters:TimeZone=America/New_York
+   Google Click ID,Conversion Name,Conversion Time,Conversion Value,Conversion Currency
+   Cj0KCQ…,MM – Paid subscription,2026-11-02 13:30:05,49.00,USD
+   ```
+   Google ignores rows it has already imported, so the rolling window is safe to fetch daily.
+
+**What Google receives:** the click ID, conversion name, time, value and currency. No email, name, phone, company, customer or homeowner data, and no enhanced conversions. **Data kept:** `mow_ad_clicks` (migration `20261103120000_google_ads_purchase_conversions.sql`) is server-only (RLS on, no browser grants). Rows are purged 90 days after saving if no purchase happens, or 120 days after a purchase. `/privacy` and `/cookies` say this in one sentence.
+
+**Limits:** only `gclid` is handed off and uploaded, because the scheduled CSV template doesn't cover `gbraid`/`wbraid`, so iOS app-traffic clicks aren't counted. Sign-ups that start at `office.mowmatter.com/login.html` directly, not through `/early-access`, carry no click ID. A visitor who withdraws consent on another mowmatter.com page leaves Office's copy until it's used or expires (max 7 days); the server copy can then only be removed on request.
 
 **Homeowner data rule.** Homeowner data must never be used for Mow Matter's own marketing. Don't upload homeowner emails, phones or requests to Google Ads (no Customer Match, no enhanced conversions for leads, no offline conversion import of homeowner records). Don't build remarketing audiences from homeowner pages. The homeowner conversion is a count of saved requests and nothing more.
 
@@ -90,7 +111,7 @@ Copy rules for all ads (from the current site): SMS and text-message features ar
 
 ## 3. Campaign A: Business owners (Office sign-ups), one campaign per region
 
-- **Type:** Search only (turn off Display Network and Search Partners at first). **Bidding:** Maximize clicks with a **$2.00 max CPC cap**, so $5 buys at least 2 clicks a day. Keep it on Maximize clicks for the whole $5/day test: no region will reach the ~30 conversions Maximize conversions needs, so switch only after a region proves out and gets more budget.
+- **Type:** Search only (turn off Display Network and Search Partners at first). **Bidding:** Maximize clicks with a **$2.00 max CPC cap**, so $5 buys at least 2 clicks a day. Keep it on Maximize clicks for the whole $5/day test: no region will reach the ~30 conversions a month that Maximize conversions needs. **Switch to Maximize conversions on `MM – Paid subscription` once the account records about 30 paid subscriptions a month** (across all business campaigns, or per campaign with a shared budget/portfolio strategy). Add a target CPA only after another month at that volume. Until then, watch `MM – Business signup` (secondary) as the early signal.
 - **Keep clicks cheap:** lead with longer, specific phrases ("lawn mowing business software", "lawn care invoicing software"). They usually cost less than the head term "lawn care software", which national competitors bid on. Use only exact and phrase match, keep Search Partners off, and after two weeks look at the *Hour of day* report. If evening and weekend clicks never sign up, schedule ads for the hours that do. Raise ad strength to "Good" or better; a better ad can lower what you pay per click.
 - **Build once, copy per region.** Create *MM-Biz · Palm Coast* from this template, then use *Copy/Paste* for each region in §0, changing only the location, budget, headline 11 and the `utm_campaign` value. Use **Presence** ("people in or regularly in"), not "interest", and exclude the other regions' areas so campaigns don't overlap.
 - **Budget (suggestion):** per region, as in the §0 table. A small area has little search volume, so more budget mostly buys pricier clicks. Put the rest of the effort into outreach.
@@ -208,7 +229,7 @@ Don't claim: instant prices, guaranteed providers or dates, licensed/insured, "b
 ## 5. Manual steps for the owner (in your own Chrome)
 
 1. **Account.** Create or confirm the Google Ads account (ads.google.com) and choose **Expert mode** so you can make a Search-only campaign without Performance Max. The draft you have open names a business called "Outvision". Confirm it belongs to the account you want to use for Mow Matter. Enter billing and accept Google's terms yourself.
-2. **Conversion actions.** Goals → Conversions → New → Website → *Set up manually / Use Google tag*. Create the three actions in §1 with the listed category, primary/secondary role, "One" count and a 30-day click window. From each action's "Event snippet", copy the `AW-…` ID (shared) and the `send_to` label after the `/`.
+2. **Conversion actions.** Goals → Conversions → New → Website → *Set up manually / Use Google tag*. Create the three **website** actions in §1 (`MM – Paid subscription` is an import action; see step 8) with the listed category, primary/secondary role, "One" count and a 30-day click window. From each action's "Event snippet", copy the `AW-…` ID (shared) and the `send_to` label after the `/`.
 3. **Fill the placeholders** in `web/dist/privacy-controls.js` (`adsId`, `adsBusinessSignup`, `adsHomeownerRequest`, `adsDirectorySearch`). Then run `npm run sync:assets && npm run check` in `api/`, commit, and merge. Merging to main publishes the marketing site through Cloudflare.
 4. **Deploy in this order** (each step is safe on its own):
    1. Merge this PR. Cloudflare publishes `web/dist`, including `/welcome`, from main. Check that `https://mowmatter.com/welcome` loads before step 3.
@@ -220,9 +241,16 @@ Don't claim: instant prices, guaranteed providers or dates, licensed/insured, "b
 5. **Link GA4** (property for stream `G-1T8EP3GRVX`) to Google Ads under Tools → Linked accounts, for reporting only. Leave Google Signals and ads personalization **off** in GA4.
 6. **Auto-tagging** on (Account settings). Add the final URL suffixes from §3/§4.
 7. **Verify after publishing:** open `https://mowmatter.com/?gclid=test`, click *Allow analytics*, and run a directory search. Then use Google Tag Assistant or the conversion action's diagnostics, which can take a few hours to show "Recording conversions". Check a test homeowner request row: `source.gclid` should be `test`.
-8. **Run the homeowner ZIP query** (§4). Create Campaign B only once ≥3 approved providers cover a ZIP cluster, limited to those ZIPs. As of 2026-11-03 there are none in the test cluster.
-9. **Build campaigns** from §3/§4 and paste the headlines and descriptions as written. Set daily budgets yourself. Review the Search terms report weekly and add negatives.
-10. **Legal review (lower risk now).** The notices no longer make the absolute "we don't share for cross-context behavioral advertising" claim. They say what happens: conversion measurement with consent, restricted data processing on, no targeting or remarketing. Reject, Privacy controls and GPC count as an opt-out of any sale or sharing. A quick counsel review before launch is still wise.
+8. **Paid-subscription import (§1a), after steps 3–4:**
+   1. Apply `supabase/migrations/20261103120000_google_ads_purchase_conversions.sql` to production (`pzymmsfjgspvzbivzvkx`) with your usual migration process, after checking it on a staging copy.
+   2. Google Ads → Goals → Conversions → New → **Import** → *Manual import using API or uploads* → **Track conversions from clicks**. Name it exactly `MM – Paid subscription`, category **Purchase**, **Primary**, count **One**, value "Use different values for each conversion", 90-day click window. Then set `MM – Business signup` to **Secondary**.
+   3. In Render → `mowmatter-property` → Environment, add `GOOGLE_ADS_PURCHASE_CONVERSION_NAME=MM – Paid subscription`, `GOOGLE_ADS_UPLOAD_USER` (any username) and `GOOGLE_ADS_UPLOAD_PASSWORD` (a long random password you generate; keep it out of git and chat). Then add `GOOGLE_ADS_PURCHASE_ENABLED=true` and deploy the API. Deploy Office too (step 4.3) so `billing.js`/`office-live.js` send the click.
+   4. Google Ads → Goals → Uploads → **Schedules** → New → source **HTTPS**, URL `https://mowmatter-property.onrender.com/api/billing/ads/purchases.csv`, with that username and password, daily. Use *Preview* first. If Google rejects the time format or a column, tell Claude the exact message; don't edit the file by hand.
+   5. Test: from a Google ad click (or `https://mowmatter.com/early-access?gclid=` plus a test ID), allow analytics, create a test business, open Office as the owner, and buy Growth in the Stripe **sandbox**. The row should appear in the CSV. A fake gclid will be rejected by Google; that's expected.
+   6. To switch it off, set `GOOGLE_ADS_PURCHASE_ENABLED` to anything other than `true`. The API stops storing click IDs and the file returns 404.
+9. **Run the homeowner ZIP query** (§4). Create Campaign B only once ≥3 approved providers cover a ZIP cluster, limited to those ZIPs. As of 2026-11-03 there are none in the test cluster.
+10. **Build campaigns** from §3/§4 and paste the headlines and descriptions as written. Set daily budgets yourself. Review the Search terms report weekly and add negatives.
+11. **Legal review (lower risk now).** The notices no longer make the absolute "we don't share for cross-context behavioral advertising" claim. They say what happens: conversion measurement with consent, restricted data processing on, no targeting or remarketing. Reject, Privacy controls and GPC count as an opt-out of any sale or sharing. A quick counsel review before launch is still wise.
 
 ## 6. Recommendations (in priority order)
 
@@ -231,7 +259,7 @@ Don't claim: instant prices, guaranteed providers or dates, licensed/insured, "b
 3. **Landing fixes are in this PR:** `/early-access` is sign-up-first, and paid campaign traffic doesn't see the other audience's bar.
 4. **Recruit outside ads too:** phone calls and visits beat search ads for 10–20 local operators. Tag outreach links so the scorecard compares channels.
 5. **Exact and phrase match only, Search Network only, Presence-only geo.** Skip Performance Max and Display for now. They need conversion volume and remarketing, which this setup deliberately doesn't use.
-6. **Bid only on `MM – Business signup` / `MM – Homeowner request`.** Keep directory search as secondary so Google doesn't optimize for cheap searches.
+6. **Make `MM – Paid subscription` the business goal and `MM – Business signup` secondary; bid on purchases at ~30 a month (§3).** For homeowners, bid only on `MM – Homeowner request`. Keep directory search as secondary so Google doesn't optimize for cheap searches.
 7. **Weekly 15-minute review:** search terms → add negatives; pause keywords with no sign-up after ~$100 spend; pause headlines rated "Low" after two weeks.
 8. **Don't advertise unbuilt features:** no texting or SMS reminders, instant quotes, Featured Placement, guaranteed providers or "best/#1".
 9. **Re-check the homeowner data rule before any new Ads feature.** No Customer Match, no enhanced conversions, no audiences built from `/lawn-care` or `/locate-lawn-care` visitors.

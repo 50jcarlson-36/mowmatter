@@ -1,5 +1,6 @@
 import { subscriptionRecovery } from "./subscription-recovery.mjs";
 import { paymentRecovery } from "./recovery.mjs";
+import { adPurchases } from "./ad-purchases.mjs";
 import { homeownerBilling } from "./homeowner.mjs";
 import Stripe from "stripe";
 import {
@@ -397,6 +398,7 @@ export function createBilling({
 
   const recovery = paymentRecovery({ db, stripe });
   const savedSubscription = subscriptionRecovery({ db, stripe });
+  const ads = adPurchases({ db, env });
   const homeowner = homeownerBilling({
     db,
     stripe,
@@ -473,6 +475,12 @@ export function createBilling({
             .reduce((n, x) => n + (x.quantity || 0), 0)
         : 0,
     });
+    // Ads measurement must never block billing; a missed purchase is only a reporting gap.
+    try {
+      await ads.recordPurchase(rows[0].company_id, s, sub, event.created);
+    } catch {
+      console.error("ad_purchase_record_failed");
+    }
   }
   return async function handle(req, res) {
     const pathname = new URL(req.url, "http://localhost").pathname;
@@ -615,6 +623,21 @@ export function createBilling({
         send(200, { received: true });
         return true;
       }
+      if (pathname === "/api/billing/ads/purchases.csv") {
+        const feed =
+          req.method === "GET" ? await ads.feed(req) : { status: 405 };
+        res.writeHead(feed.status, {
+          "Content-Type":
+            feed.status === 200 ? "text/csv; charset=utf-8" : "text/plain",
+          "Cache-Control": "no-store",
+          "X-Content-Type-Options": "nosniff",
+          ...(feed.status === 401
+            ? { "WWW-Authenticate": 'Basic realm="Mow Matter conversions"' }
+            : {}),
+        });
+        res.end(feed.body || "");
+        return true;
+      }
       const origin = req.headers.origin;
       if (!ORIGINS.has(origin)) {
         send(403, { error: "Origin not allowed" });
@@ -654,6 +677,10 @@ export function createBilling({
         ? await customerInvoice(req, body)
         : await owner(req, body.company_id);
       const { cid, user } = access;
+      if (pathname === "/api/billing/ad-click") {
+        send(200, await ads.saveClick(cid, body));
+        return true;
+      }
       let a = await account(cid);
       if (
         pathname.startsWith("/api/billing/recurring-") ||

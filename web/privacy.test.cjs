@@ -346,3 +346,32 @@ test("paid campaign landings hide the cross-audience bar for the tab; organic vi
     assert.equal(w.document.getElementById("audience-banner").hidden, hidden, query);
   }
 });
+test("sign-up page hands the Office frame a click ID only with consent and clears it on withdrawal", () => {
+  const d = new JSDOM(
+    '<!doctype html><html><head></head><body><iframe id="business-login-frame"></iframe></body></html>',
+    { url: "https://mowmatter.com/early-access?gclid=Cj0KCQiA_TESTCLICK&utm_source=google", runScripts: "outside-only" },
+  );
+  const w = d.window;
+  w.eval(code);
+  const frame = w.document.getElementById("business-login-frame"),
+    posted = [];
+  frame.contentWindow.postMessage = (data, origin) => posted.push(JSON.parse(JSON.stringify({ data, origin })));
+  w.eval(fs.readFileSync(__dirname + "/dist/access.js", "utf8"));
+  const ready = (origin = "https://office.mowmatter.com") =>
+    w.dispatchEvent(new w.MessageEvent("message", { origin, source: frame.contentWindow, data: { type: "mm-business-login-height", height: 400 } }));
+  ready("https://evil.example");
+  assert.equal(posted.length, 0);
+  ready();
+  assert.deepEqual(posted, [{ data: { type: "mm-ad-click-clear" }, origin: "https://office.mowmatter.com" }]);
+  w.mmPrivacy.save(true);
+  const handed = posted.at(-1);
+  assert.equal(handed.origin, "https://office.mowmatter.com");
+  assert.equal(handed.data.type, "mm-ad-click");
+  assert.equal(handed.data.gclid, "Cj0KCQiA_TESTCLICK");
+  assert.equal(handed.data.consented_at, JSON.parse(w.localStorage.getItem("mm-privacy-v1")).time);
+  assert.deepEqual(Object.keys(handed.data).sort(), ["consented_at", "gclid", "type"]);
+  ready();
+  assert.equal(posted.length, 2, "handed off once per page, not on every resize");
+  w.mmPrivacy.save(false);
+  assert.deepEqual(posted.at(-1).data, { type: "mm-ad-click-clear" });
+});
