@@ -39,3 +39,14 @@ dialog { overscroll-behavior:contain; }
 #office-nav nav{height:auto;flex:none;min-height:0}#office-nav nav>*{flex-shrink:0}#business-glance{flex:none;margin-top:28px;padding-top:20px;border-top:1px solid #365345}#office-nav{min-width:0}#office-nav a,#office-nav button,#business-glance{overflow-wrap:anywhere}.section-head{flex-wrap:wrap}.section-head>*{min-width:0}.card,.card p,.help{overflow-wrap:anywhere}@media(min-width:769px){#office-nav{align-self:stretch}}
 
 .page-head:has(.office-quick-actions){flex-wrap:wrap;gap:18px}.office-quick-actions{align-items:center}.office-quick-actions .button{white-space:nowrap}@media(max-width:768px){.page-head>.office-quick-actions{display:grid;width:100%;grid-template-columns:repeat(2,minmax(0,1fr))}.office-quick-actions #new-job{grid-column:1/-1}}
+/* Layout fix 2026-11-11: full-bleed sidebar, signed-out view, consistent nav */
+.app-shell{max-width:none;margin:0}
+body.signed-out #office-nav,body.signed-out #mobile-menu{display:none!important}
+body.signed-out .app-shell{display:block}
+#office-nav nav a{padding:10px 14px;align-items:center}
+#office-nav nav a span{display:inline-grid;place-items:center;width:22px;height:22px;font-size:0}
+#office-nav nav a span svg{width:20px;height:20px}
+#office-nav nav a.nav-secondary{font-size:13px;font-weight:600;padding:7px 14px;color:#b6ccb9}
+#office-nav nav a.nav-secondary:hover{color:#fff}
+#office-nav nav a.nav-secondary.first{margin-top:12px;border-top:1px solid #365345;border-radius:0;padding-top:16px}
+body.signed-out main{margin:0 auto}
