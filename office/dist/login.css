@@ -2,3 +2,10 @@
 
 main{display:flow-root}
 .launch-preference{display:flex;gap:12px;align-items:flex-start;margin:20px 0}.launch-preference input{width:18px;min-height:18px;flex:0 0 18px;margin:4px 0}.launch-preference small{display:block;font-weight:400;margin-top:6px;color:#55665d}
+.mm-brand{display:none}
+.standalone body{min-height:100vh;background:#f3f6f1;padding:40px 16px}
+.standalone main{max-width:440px;margin:0 auto;background:#fff;border:1px solid #dfe7e1;border-radius:16px;padding:28px 28px 20px;box-shadow:0 8px 30px rgba(8,43,32,.08)}
+.standalone .mm-brand{display:block;text-align:center;margin:0 0 24px}
+.standalone .mm-brand a{display:inline-flex;align-items:center;gap:10px;color:#082b20;text-decoration:none;font-weight:800;font-size:15px;line-height:1.05;letter-spacing:.04em;text-align:left}
+.standalone .mm-brand h1{font-size:20px;margin:14px 0 0;color:#082b20}
+@media (max-width:480px){.standalone body{padding:0;background:#fff}.standalone main{border:0;border-radius:0;box-shadow:none;padding:24px 18px}}
