@@ -71,6 +71,7 @@ function mountGoogleLogin(form,options={}){
 }
 
 window.MM={ready,saveLaunchUpdates,get launchUpdatesChoice(){return pendingPreference()},socialSignIn,googleSignIn:()=>socialSignIn('google'),facebookSignIn:()=>socialSignIn('facebook'),mountGoogleLogin,get authError(){return authError},async ensureSession(){await ready;if(!session)throw Error('Sign in to continue');if(session.expires_at<Date.now()+30000)await refresh();return session},get session(){return session},get recovery(){return recovery},
+async acceptTerms(acceptance){await ready;if(!session)throw Error('Sign in to continue');if(session.expires_at<Date.now()+30000)await refresh();const user=await request('user',{data:acceptance},'PUT',session.access_token);save({...session,user});return user},
 async signIn(email,password){const d=await request('token?grant_type=password',{email,password});save({...d,expires_at:Date.now()+d.expires_in*1000});recovery=false;sessionStorage.removeItem('mm-recovery');return d},
 async signUp(email,password,launchUpdates,acceptance){rememberPreference(launchUpdates);return request('signup?redirect_to='+encodeURIComponent(typeof launchUpdates==='boolean'?location.origin+'/login.html':redirect()),{email,password,data:{...(typeof launchUpdates==='boolean'?{launch_updates:launchUpdates}:{}),...(acceptance||{})}})},
 async resend(email){return request('resend',{type:'signup',email,options:{email_redirect_to:redirect()}})},

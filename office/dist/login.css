@@ -9,3 +9,4 @@ main{display:flow-root}
 .standalone .mm-brand a{display:inline-flex;align-items:center;gap:10px;color:#082b20;text-decoration:none;font-weight:800;font-size:15px;line-height:1.05;letter-spacing:.04em;text-align:left}
 .standalone .mm-brand h1{font-size:20px;margin:14px 0 0;color:#082b20}
 @media (max-width:480px){.standalone body{padding:0;background:#fff}.standalone main{border:0;border-radius:0;box-shadow:none;padding:24px 18px}}
+#terms-gate .gate-title{font-size:20px;margin:0 0 6px}#terms-gate [role=status]{font-size:14px;line-height:1.5}#terms-gate [role=status]:empty{display:none}
