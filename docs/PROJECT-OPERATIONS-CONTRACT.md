@@ -440,3 +440,8 @@ The complete 176-test API check passed locally and in GitHub run 41075562293; Of
 
 - Site Login links open office.mowmatter.com/login.html directly; it rendered edge to edge without branding because it was built for the early-access iframe. PR #24 (`3c565533ab399b358063a7d9c15d3d3e32f1d982`) adds head script login-frame.js (CSP self-only) that marks top-level loads `.standalone`, a branded centered card for that case only, and scrolls the status message into view when it changes off-screen.
 - Office Render deployment `dep-dbqggpp42hec73d2i3jg` live 00:29:46 UTC Nov 12 at that SHA; auto-deploy remains off. Public page verified standalone with header; Google-without-terms error scrolls into view; early-access iframe still loads and resizes. No API, Crew, marketing, auth or data changes.
+
+## Go-live audit — November 11, 2026
+
+- Full audit recorded in docs/GO-LIVE-AUDIT-2026-11-11.md. PR #26 (`244e9008dabbcf99404262c4aeed6d62b645749f`) fixed Google sign-in from early access (framed terms acceptance carried to top-level start, referrer-restricted), patched undici/zod in API, fixed Crew test date. Office `dep-dbqgvpei0phs73cl7olg` and API `dep-dbqgvp8n74is73c5pqu0` live at that SHA; marketing via Workers Builds verified serving the fix.
+- Supabase connector can only see the Outvision org; MowMatter advisors/backups/redirect allow-list remain unverified. Google consent-screen publishing status unverified.
