@@ -23,10 +23,13 @@ async function load({session,user}={}){
  w.document.querySelector('[name=account_terms]').checked=true;await w.document.querySelector('[data-google-login]').onclick();
  assert.equal(w.__started.acceptance.terms_version,'2026-10-07');dom.window.close();
  // 2) signed in, acceptance on file: straight into Office
- ({dom,w}=await load({session:true,user:{id:'u',email:'a@b.co',user_metadata:{terms_version:'2026-10-07'}}}));
+ ({dom,w}=await load({session:true,user:{id:'u',email:'a@b.co',created_at:new Date().toISOString(),user_metadata:{terms_version:'2026-10-07'}}}));
  assert.equal(JSON.stringify([...w.__assign]),JSON.stringify(['/index.html']));assert.equal(w.document.getElementById('terms-gate'),null);dom.window.close();
  // 3) signed in, no acceptance on file: gate shown, nothing opens until agreed
- let calls;({dom,w,calls}=await load({session:true,user:{id:'u',email:'a@b.co',user_metadata:{}}}));
+ // existing member with no recorded acceptance: never asked
+ ({dom,w}=await load({session:true,user:{id:'old',email:'a@b.co',created_at:'2026-10-20T12:00:00Z',user_metadata:{}}}));
+ assert.equal(JSON.stringify([...w.__assign]),JSON.stringify(['/index.html']),'existing members enter with no extra step');assert.equal(w.document.getElementById('terms-gate'),null);dom.window.close();
+ let calls;({dom,w,calls}=await load({session:true,user:{id:'u',email:'a@b.co',created_at:new Date().toISOString(),user_metadata:{}}}));
  const gate=w.document.getElementById('terms-gate');assert.ok(gate,'gate shown');assert.equal(JSON.stringify([...w.__assign]),JSON.stringify([]));
  assert.equal(w.document.getElementById('business-login').hidden,true);
  gate.dispatchEvent(new w.Event('submit',{cancelable:true}));await new Promise(r=>setTimeout(r,20));
@@ -34,5 +37,5 @@ async function load({session,user}={}){
  gate.elements.account_terms.checked=true;gate.dispatchEvent(new w.Event('submit',{cancelable:true}));await new Promise(r=>setTimeout(r,30));
  const put=calls.find(c=>c.url.endsWith('/auth/v1/user')&&c.opt.method==='PUT');assert.equal(JSON.parse(put.opt.body).data.terms_version,'2026-10-07');
  assert.equal(JSON.stringify([...w.__assign]),JSON.stringify(['/index.html']),'enters Office after agreeing');dom.window.close();
- console.log('PASS returning login: Google starts without re-ticking terms, ticked box still records versions, recorded accounts enter directly, unrecorded accounts agree once before entry.');
+ console.log('PASS returning login: Google starts without re-ticking terms, ticked box still records versions, existing members enter directly, only brand-new accounts without acceptance agree once.');
 })().catch(e=>{console.error(e);process.exit(1)});
