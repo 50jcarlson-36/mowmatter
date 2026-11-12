@@ -1,7 +1,7 @@
 const {JSDOM}=require('jsdom');const fs=require('fs');const assert=require('node:assert/strict');const path=require('path');const root=path.join(__dirname,'dist');
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 function idb(seed={}){const stores={queue:new Map(),photos:new Map(),snapshots:new Map()};for(const [n,rows]of Object.entries(seed))rows.forEach(x=>stores[n].set(x.id,x));return {stores,open(){const r={result:{createObjectStore(n){stores[n]??=new Map()},transaction(n){const t={objectStore(){return new Proxy({}, {get(_,op){return v=>{const q={};setTimeout(()=>{const s=stores[n];q.result=op==='getAll'?[...s.values()]:op==='get'?s.get(v):op==='put'?(s.set(v.id,v),v.id):s.delete(v);q.onsuccess?.();setTimeout(()=>t.oncomplete?.(),0)},0);return q}}})}};return t}}};setTimeout(()=>{r.onupgradeneeded?.();r.onsuccess?.()},0);return r}}}
-const today=()=>new Date().toISOString().slice(0,10);
+const today=()=>new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
 const job=(id,status='scheduled')=>({id,assigned_to:'crew',customer_name:'Test customer',address:id+' Test Lane',city:'Palm Coast, FL',service_date:today(),scheduled_time:'09:00',status,services:['Mow'],requires_photo:false,latitude:29.584,longitude:-81.207});
 const snapshot=jobs=>({company:{name:'QA'},profile:{id:'crew',name:'QA Crew',role:'member'},members:[],jobs,events:[],photos:[],messages:[],notifications:[]});
 const event=(id,jid,verb)=>({id,event_id:id,user_id:'crew',job_id:jid,verb,details:{},created_at:'2026-10-05T12:00:0'+id.slice(-1)+'Z'});
