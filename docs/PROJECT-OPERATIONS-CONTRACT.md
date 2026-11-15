@@ -452,3 +452,5 @@ The complete 176-test API check passed locally and in GitHub run 41075562293; Of
 
 ## November 15, 2026 — public discovery and social identity
 Owner requested current SEO and official social/cross-brand linkbacks. Marketing HTML now names the verified MowMatter Facebook and LinkedIn in Organization sameAs and visible footer links. Related public Outvision-It, 36seas and First Mate resources appear in the footer and llms guide. No unverified MowMatter YouTube URL is invented. Existing canonical routes, sitemap and robots policies remain unchanged; Office/Crew/API/auth/payment behavior is untouched. Root and web/dist mirrors remain synchronized. Source syntax and deployment drift checks pass. Release via existing Workers Builds on main; public-domain HTML must be verified after deployment. Rollback is the preceding main SHA 57c08b48de04ee31c574271c3a468747eeabe546.
+
+Follow-up full sitemap crawl found missing explicit Twitter title/description/image on 11 public pages. Reused each page’s existing Open Graph values and added the consistent MowMatter site name. No artwork or content changes.
