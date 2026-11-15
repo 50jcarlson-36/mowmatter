@@ -13,3 +13,13 @@
 ## Availability
 
 Crew is a mobile web app. Native apps and Instant Quotes are not released. SMS availability depends on provider activation and customer opt-in. Consult the linked product pages for current limitations.
+
+## Official social channels
+- [Facebook](https://www.facebook.com/profile.php?id=61596516120561)
+- [LinkedIn](https://www.linkedin.com/company/mow-matter/)
+
+## Related resources
+- [Outvision-It · AI learning](https://outvision.com/)
+- [MowMatter · lawn care business tools](https://mowmatter.com/)
+- [36seas Publishing · books](https://36seas.com/)
+- [First Mate · author studio](https://36seas.com/first-mate/)
