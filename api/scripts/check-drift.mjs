@@ -7,6 +7,8 @@ const copies = [
     "index.html",
     "partners.html",
     "partners.css",
+    "additional-services.html",
+    "additional-services.css",
     "crew-app.html",
     "lawn-care.html",
     "customer-progress.css",
