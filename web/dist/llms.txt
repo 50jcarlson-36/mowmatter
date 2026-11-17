@@ -23,3 +23,6 @@ Crew is a mobile web app. Native apps and Instant Quotes are not released. SMS a
 - [MowMatter · lawn care business tools](https://mowmatter.com/)
 - [36seas Publishing · books](https://36seas.com/)
 - [First Mate · author studio](https://36seas.com/first-mate/)
+
+## Additional services
+https://mowmatter.com/additional-services — Independent lawn care insurance resource via Simply Business. Currently an unpaid link; no approved affiliate relationship, commission or exclusive discount is claimed. Other service categories are in development.

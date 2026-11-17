@@ -1,3 +1,7 @@
 # Cloudflare static assets redirects (served from web/dist).
 /support /contact 301
 /support/ /contact 301
+
+# Standard resource link until Simply Business issues an approved tracking URL.
+/go/simply-business https://www.simplybusiness.com/cs/welcome/lawn-care-insurance/ 302
+/go/simply-business/ https://www.simplybusiness.com/cs/welcome/lawn-care-insurance/ 302
