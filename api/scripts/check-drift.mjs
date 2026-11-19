@@ -17,6 +17,11 @@ const copies = [
     "route-comparison.js",
   ].map((name) => ["web/dist/" + name, name]),
   ...[
+    "access.js",
+    "early-access.html",
+    "signup-complete.html",
+    "request-received.html",
+    "signup-measurement.js",
     "privacy-controls.js",
     "capture.js",
     "homeowner.js",

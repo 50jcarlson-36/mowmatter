@@ -36,14 +36,16 @@ for (const host of ["web", "office", "crew"]) {
       ? "https://mowmatter.com https://www.mowmatter.com"
       : "'none'";
   const googleScript =
-    host === "web" ? "https://www.googletagmanager.com " : "";
+    host === "web"
+      ? "https://www.googletagmanager.com https://connect.facebook.net "
+      : "";
   const googleImages =
     host === "web"
-      ? "https://www.google-analytics.com https://region1.google-analytics.com "
+      ? "https://www.google-analytics.com https://region1.google-analytics.com https://www.facebook.com https://facebook.com "
       : "";
   const googleConnect =
     host === "web"
-      ? "https://www.google-analytics.com https://region1.google-analytics.com https://analytics.google.com "
+      ? "https://www.google-analytics.com https://region1.google-analytics.com https://analytics.google.com https://www.facebook.com https://facebook.com "
       : "";
   const csp = `default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors ${ancestors}; script-src 'self' ${googleScript}${[...hashes].sort().join(" ")}; style-src 'self' 'unsafe-inline'; img-src 'self' ${googleImages}data: blob: https://pzymmsfjgspvzbivzvkx.supabase.co; font-src 'self' data:; connect-src 'self' ${googleConnect}https://pzymmsfjgspvzbivzvkx.supabase.co wss://pzymmsfjgspvzbivzvkx.supabase.co https://mowmatter-property.onrender.com; frame-src ${host === "web" ? "https://office.mowmatter.com" : "'none'"}; form-action 'self'; worker-src 'self' blob:; upgrade-insecure-requests`;
   const headers = {
