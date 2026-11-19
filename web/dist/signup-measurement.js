@@ -16,6 +16,31 @@
     return navigator.globalPrivacyControl !== true && navigator.doNotTrack !== '1' && cookie('mm-meta-consent') === 'allow';
   }
 
+  function openOfficeAfterMeasurement(library) {
+    // The Pixel loads its dataset configuration after the library loads.
+    // Keep this page open until the event request finishes or the wait expires.
+    let observer;
+    const timeout = setTimeout(continueToOffice, 5000);
+    function continueToOffice() {
+      clearTimeout(timeout);
+      observer?.disconnect();
+      location.replace(office);
+    }
+    library.addEventListener('error', continueToOffice, { once: true });
+    if (!window.PerformanceObserver?.supportedEntryTypes?.includes('resource')) return;
+    observer = new PerformanceObserver(list => {
+      const sent = list.getEntries().some(entry => {
+        const url = new URL(entry.name);
+        return url.origin === 'https://www.facebook.com' &&
+          /^\/tr\/?$/.test(url.pathname) &&
+          url.searchParams.get('id') === pixelId &&
+          url.searchParams.get('ev') === 'CompleteRegistration';
+      });
+      if (sent) continueToOffice();
+    });
+    observer.observe({ type: 'resource', buffered: true });
+  }
+
   function start() {
     if (started || !allowed() || location.hostname !== 'mowmatter.com') return;
     if (homeownerForm) {
@@ -51,14 +76,13 @@
     library.async = true;
     library.src = 'https://connect.facebook.net/en_US/fbevents.js';
     library.referrerPolicy = 'strict-origin';
-    if (completion) library.addEventListener('load', () => setTimeout(() => location.replace(office), 350), { once: true });
+    if (completion) openOfficeAfterMeasurement(library);
     document.head.append(library);
   }
 
   start();
   if (completion) {
     if (!started) location.replace(office);
-    else setTimeout(() => location.replace(office), 1800);
   } else {
     window.addEventListener('mmprivacychange', () => {
       if (!allowed()) window.fbq?.('consent', 'revoke');
