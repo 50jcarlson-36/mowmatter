@@ -3,7 +3,9 @@
   const pixelId = '2191095804857507';
   const office = 'https://office.mowmatter.com/';
   const completion = /^\/signup-complete(?:\.html|\/)?$/.test(location.pathname);
-  const registration = 'mm-meta-registration';
+  const homeownerReceipt = /^\/request-received(?:\.html|\/)?$/.test(location.pathname);
+  const homeownerForm = /^\/lawn-care(?:\.html|\/)?$/.test(location.pathname);
+  const marker = homeownerReceipt ? 'mm-meta-homeowner' : 'mm-meta-registration';
   let started = false;
 
   function cookie(name) {
@@ -16,11 +18,19 @@
 
   function start() {
     if (started || !allowed() || location.hostname !== 'mowmatter.com') return;
-    const eventId = completion ? cookie(registration) : null;
-    if (completion && !/^[0-9a-f-]{36}$/.test(eventId || '')) return;
+    if (homeownerForm) {
+      const clickId = new URLSearchParams(location.search).get('fbclid');
+      if (/^[\w-]{8,500}$/.test(clickId || '') && !cookie('_fbc')?.endsWith('.' + clickId)) {
+        document.cookie = '_fbc=fb.1.' + Date.now() + '.' + clickId +
+          '; Domain=mowmatter.com; Path=/; Secure; SameSite=Lax; Max-Age=7776000';
+      }
+      return;
+    }
+    const eventId = completion || homeownerReceipt ? cookie(marker) : null;
+    if ((completion || homeownerReceipt) && !/^[0-9a-f-]{36}$/.test(eventId || '')) return;
     started = true;
-    if (completion) {
-      document.cookie = registration + '=; Domain=mowmatter.com; Path=/; Secure; SameSite=Lax; Max-Age=0';
+    if (completion || homeownerReceipt) {
+      document.cookie = marker + '=; Domain=mowmatter.com; Path=/; Secure; SameSite=Lax; Max-Age=0';
     }
     const meta = (...args) => {
       if (meta.callMethod) meta.callMethod(...args);
@@ -34,6 +44,7 @@
     meta('set', 'autoConfig', false, pixelId);
     meta('init', pixelId);
     if (completion) meta('trackSingle', pixelId, 'CompleteRegistration', {}, { eventID: eventId });
+    else if (homeownerReceipt) meta('trackSingle', pixelId, 'Lead', {}, { eventID: eventId });
     else meta('trackSingle', pixelId, 'PageView');
 
     const library = document.createElement('script');

@@ -36,7 +36,9 @@ for (const host of ["web", "office", "crew"]) {
       ? "https://mowmatter.com https://www.mowmatter.com"
       : "'none'";
   const googleScript =
-    host === "web" ? "https://www.googletagmanager.com https://connect.facebook.net " : "";
+    host === "web"
+      ? "https://www.googletagmanager.com https://connect.facebook.net "
+      : "";
   const googleImages =
     host === "web"
       ? "https://www.google-analytics.com https://region1.google-analytics.com https://www.facebook.com https://facebook.com "
