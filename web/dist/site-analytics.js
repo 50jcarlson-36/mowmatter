@@ -15,5 +15,16 @@ function erase(){for(const c of document.cookie.split(';')){const name=c.trim().
 function save(analytics){if(bridge){const ok=bridge.save(analytics);if(!ok)return false;}else try{localStorage.setItem(key,JSON.stringify({version:1,time:Date.now(),analytics:analytics===true&&!signal()}))}catch{return false}window['ga-disable-'+id]=!allowed();if(!allowed()){erase();lastPage='';}view();document.querySelector('#site-ga-choice')?.remove();return true;}
 function choices(){document.querySelector('#site-ga-choice')?.remove();const box=document.createElement('section');box.id='site-ga-choice';box.setAttribute('aria-label','Analytics privacy choices');box.innerHTML='<strong>Optional website analytics</strong><p>Allow Google Analytics to help us understand site use? It uses analytics cookies. We don’t send form contents or enable advertising features. Rejecting does not affect the service.</p><div><button type="button" data-choice="no">Reject optional</button><button type="button" data-choice="yes">Allow analytics</button><button type="button" data-choice="close">Close</button></div><p role="status"></p>';box.className='site-ga-choice';document.body.append(box);box.querySelectorAll('[data-choice]').forEach(button=>button.onclick=()=>{if(button.dataset.choice==='close')return box.remove();if(!save(button.dataset.choice==='yes'))box.querySelector('[role=status]').textContent='Browser storage is unavailable. Analytics stays off.';});if(signal()){box.querySelector('[data-choice=yes]').disabled=true;box.querySelector('[role=status]').textContent='Your browser privacy signal keeps optional analytics off.'}}
 window.siteAnalytics={allowed,save,open:choices,track(name,persona=''){if(!['cta_click','form_started','form_error','budget_opened','generate_lead'].includes(name)||!['','nurse','employer'].includes(persona)||!allowed()||!page()||!validHost())return;view();gtag('event',name,{send_to:id,inquiry_type:persona,page_location:location.origin+page(),page_referrer:'',page_title:brand+' · '+(page().slice(1)||'home')});}};
+const signupStages=new Set(['business_auth_form_start','signup_submit','signup_email_requested','signup_request_failed','signup_terms_required']);
+window.siteAnalytics.trackSignup=(name,method,onSent)=>{
+ const path=page();
+ if(!allowed()||!validHost()||!['email','google','facebook','unknown'].includes(method))return false;
+ if(name==='sign_up'?path!=='/signup-complete':path!=='/early-access'||!signupStages.has(name))return false;
+ view();
+ gtag('event',name,{send_to:id,method,page_location:location.origin+path,page_referrer:'',
+  ...(typeof onSent==='function'?{event_callback:onSent,event_timeout:4000}:{})});
+ return true;
+};
+window.dispatchEvent(new Event('mm-analytics-ready'));
 function init(){if(!validHost()||!page())return;const link=document.createElement('button');link.type='button';link.id='site-ga-settings';link.className='site-ga-settings';link.textContent='Analytics choices';link.onclick=choices;document.body.append(link);if(!read()&&!signal())choices();view();window.addEventListener('mmprivacychange',()=>{if(!allowed())erase();view()});window.addEventListener('hashchange',view);window.addEventListener('popstate',view);window.addEventListener('storage',e=>{if(e.key===key)view()});}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();

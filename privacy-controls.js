@@ -12,7 +12,14 @@ function saveAdMeasurement(on){
  window.dispatchEvent(new Event('mmprivacychange'));
  return enabled===adMeasurementAllowed()
 }
-function save(analytics){try{localStorage.setItem(key,JSON.stringify({version,time:Date.now(),analytics:analytics===true&&!signal()}));localStorage.setItem('mm-measurement-off',analytics&&!signal()?'0':'1');window.dispatchEvent(new Event('mmprivacychange'));return true}catch{return false}}
+function syncSignupConsent(){
+ const choice=read();
+ if(!choice&&!signal())return;
+ const seconds=allowed()?Math.max(0,Math.floor((choice.time+lifetime-Date.now())/1000)):0;
+ document.cookie='mm-ga-signup-consent='+(seconds?'allow':'')+'; Domain=mowmatter.com; Path=/; Secure; SameSite=Lax; Max-Age='+seconds;
+}
+syncSignupConsent();
+function save(analytics){try{localStorage.setItem(key,JSON.stringify({version,time:Date.now(),analytics:analytics===true&&!signal()}));localStorage.setItem('mm-measurement-off',analytics&&!signal()?'0':'1');syncSignupConsent();window.dispatchEvent(new Event('mmprivacychange'));return true}catch{return false}}
 window.mmPrivacy={allowed,save,signal,adMeasurementAllowed,saveAdMeasurement};
 if(signal())saveAdMeasurement(false);
 const gaCss=document.createElement("link");gaCss.rel="stylesheet";gaCss.href="/site-analytics.css";document.head.append(gaCss);const ga=document.createElement("script");ga.src="/site-analytics.js";ga.defer=true;ga.dataset.gaId="G-1T8EP3GRVX";ga.dataset.gaHost="mowmatter.com";ga.dataset.gaConsentBridge="mowmatter";ga.dataset.brand="Mowmatter";document.head.append(ga);
