@@ -20,13 +20,39 @@
     // The Pixel loads its dataset configuration after the library loads.
     // Keep this page open until the event request finishes or the wait expires.
     let observer;
+    let metaPending = Boolean(library);
+    let analyticsPending = /^[0-9a-f-]{36}$/.test(cookie('mm-ga-registration') || '') &&
+      navigator.globalPrivacyControl !== true && navigator.doNotTrack !== '1' &&
+      window.mmPrivacy?.allowed() === true;
+    if (!metaPending && !analyticsPending) {
+      location.replace(office);
+      return;
+    }
     const timeout = setTimeout(continueToOffice, 5000);
     function continueToOffice() {
       clearTimeout(timeout);
       observer?.disconnect();
+      window.removeEventListener('mm-analytics-ready', sendAnalytics);
       location.replace(office);
     }
-    library.addEventListener('error', continueToOffice, { once: true });
+    function finishMeta() {
+      metaPending = false;
+      if (!analyticsPending) continueToOffice();
+    }
+    function finishAnalytics() {
+      analyticsPending = false;
+      if (!metaPending) continueToOffice();
+    }
+    function sendAnalytics() {
+      document.cookie = 'mm-ga-registration=; Domain=mowmatter.com; Path=/; Secure; SameSite=Lax; Max-Age=0';
+      if (!window.siteAnalytics?.trackSignup?.('sign_up', 'unknown', finishAnalytics)) finishAnalytics();
+    }
+    if (analyticsPending) {
+      if (window.siteAnalytics) sendAnalytics();
+      else window.addEventListener('mm-analytics-ready', sendAnalytics, { once: true });
+    }
+    if (!library) return;
+    library.addEventListener('error', finishMeta, { once: true });
     if (!window.PerformanceObserver?.supportedEntryTypes?.includes('resource')) return;
     observer = new PerformanceObserver(list => {
       const sent = list.getEntries().some(entry => {
@@ -36,7 +62,7 @@
           url.searchParams.get('id') === pixelId &&
           url.searchParams.get('ev') === 'CompleteRegistration';
       });
-      if (sent) continueToOffice();
+      if (sent) finishMeta();
     });
     observer.observe({ type: 'resource', buffered: true });
   }
@@ -82,7 +108,7 @@
 
   start();
   if (completion) {
-    if (!started) location.replace(office);
+    if (!started) openOfficeAfterMeasurement();
   } else {
     window.addEventListener('mmprivacychange', () => {
       if (!allowed()) window.fbq?.('consent', 'revoke');
